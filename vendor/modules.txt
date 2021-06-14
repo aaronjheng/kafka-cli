@@ -69,7 +69,7 @@ github.com/mattn/go-runewidth
 # github.com/olekukonko/tablewriter v0.0.5
 ## explicit
 github.com/olekukonko/tablewriter
-# github.com/pelletier/go-toml v1.2.0
+# github.com/pelletier/go-toml v1.9.2
 ## explicit
 github.com/pelletier/go-toml
 # github.com/pierrec/lz4 v2.6.0+incompatible
