@@ -5,13 +5,17 @@ import (
 	"log"
 	"os"
 
-	"github.com/Shopify/sarama"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
+// TODO: kafka-topics --create
+// TODO: kafka-topics --delete
+// TODO: kafka-topics --config
+
 var topicCmd = &cobra.Command{
-	Use: "topic",
+	Use:   "topic",
+	Short: "topic",
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 }
@@ -19,18 +23,12 @@ var topicCmd = &cobra.Command{
 var topicListCmd = &cobra.Command{
 	Use: "list",
 	Run: func(cmd *cobra.Command, args []string) {
-		brokers, clusterCfg, err := cfg.Cluster(profile)
+		cluserAdmin, err := newClusterAdmin()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		cluster, err := sarama.NewClusterAdmin(brokers, clusterCfg)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer cluster.Close()
-
-		topics, err := cluster.ListTopics()
+		topics, err := cluserAdmin.ListTopics()
 		if err != nil {
 			log.Fatal(err)
 		}

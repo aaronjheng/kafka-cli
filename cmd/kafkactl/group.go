@@ -5,32 +5,29 @@ import (
 	"log"
 	"os"
 
-	"github.com/Shopify/sarama"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
 var groupCmd = &cobra.Command{
-	Use: "group",
+	Use:   "group",
+	Short: "group",
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 }
 
 var groupListCmd = &cobra.Command{
-	Use: "list",
+	Use:   "list",
+	Short: "list",
 	Run: func(cmd *cobra.Command, args []string) {
-		brokers, clusterCfg, err := cfg.Cluster(profile)
+		cluserAdmin, err := newClusterAdmin()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		cluster, err := sarama.NewClusterAdmin(brokers, clusterCfg)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer cluster.Close()
+		defer cluserAdmin.Close()
 
-		groups, err := cluster.ListConsumerGroups()
+		groups, err := cluserAdmin.ListConsumerGroups()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -40,7 +37,7 @@ var groupListCmd = &cobra.Command{
 			consumerGroups = append(consumerGroups, k)
 		}
 
-		details, err := cluster.DescribeConsumerGroups(consumerGroups)
+		details, err := cluserAdmin.DescribeConsumerGroups(consumerGroups)
 		if err != nil {
 			log.Fatal(err)
 		}
