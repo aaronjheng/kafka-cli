@@ -30,6 +30,16 @@ var consumerConsoleCmd = &cobra.Command{
 			}
 		}()
 
+		topic, err := cmd.Flags().GetString("topic")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		partition, err := cmd.Flags().GetInt32("partition")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		// Partition flag not specified
 		var partitions []int32
 		if partition == -1 {

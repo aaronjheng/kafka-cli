@@ -30,6 +30,11 @@ var producerConsoleCmd = &cobra.Command{
 			}
 		}()
 
+		topic, err := cmd.Flags().GetString("topic")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			msg := &sarama.ProducerMessage{

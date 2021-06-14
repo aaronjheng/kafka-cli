@@ -13,6 +13,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+type Config struct {
+	DefaultCluster string              `mapstructure:"default_cluster"`
+	Clusters       map[string]*Cluster `mapstructure:"clusters"`
+}
+
+type Cluster struct {
+	Brokers []string `mapstructure:"brokers"`
+	TLS     *TLS     `mapstructure:"tls"`
+	SASL    *SASL    `mapstructure:"sasl"`
+}
+
 type TLS struct {
 	Insecure bool   `mapstructure:"insecure"`
 	CAFile   string `mapstructure:"cafile"`
@@ -22,17 +33,6 @@ type SASL struct {
 	Mechanism string `mapstructure:"mechanism"`
 	Username  string `mapstructure:"username"`
 	Password  string `mapstructure:"password"`
-}
-
-type Cluster struct {
-	Brokers []string `mapstructure:"brokers"`
-	TLS     *TLS     `mapstructure:"tls"`
-	SASL    *SASL    `mapstructure:"sasl"`
-}
-
-type Config struct {
-	DefaultCluster string              `mapstructure:"default_cluster"`
-	Clusters       map[string]*Cluster `mapstructure:"clusters"`
 }
 
 func (c *Config) Cluster(profile string) ([]string, *sarama.Config, error) {
