@@ -25,6 +25,8 @@ var rootCmd = &cobra.Command{
 func main() {
 	rootCmd.PersistentFlags().StringVarP(&profile, "profile", "p", "", "")
 
+	rootCmd.AddCommand(completionCmd)
+
 	rootCmd.AddCommand(topicCmd)
 	topicCmd.AddCommand(topicListCmd)
 
