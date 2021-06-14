@@ -10,8 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO: kafka-topics --create
-// TODO: kafka-topics --delete
 // TODO: kafka-topics --config
 
 var topicCmd = &cobra.Command{
@@ -74,5 +72,23 @@ var topicCreateCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+	},
+}
+
+var topicDeleteCmd = &cobra.Command{
+	Use:  "delete",
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		topic := args[0]
+
+		cluserAdmin, err := newClusterAdmin()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err := cluserAdmin.DeleteTopic(topic); err != nil {
+			log.Fatal(err)
+		}
+
 	},
 }
