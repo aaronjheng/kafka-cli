@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/Shopify/sarama"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -42,5 +43,36 @@ var topicListCmd = &cobra.Command{
 
 		table.Render()
 
+	},
+}
+
+var topicCreateCmd = &cobra.Command{
+	Use:  "create",
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		topic := args[0]
+
+		cluserAdmin, err := newClusterAdmin()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		numPartitions, err := cmd.Flags().GetInt32("partitions")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		replicationFactor, err := cmd.Flags().GetInt16("replication-factor")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = cluserAdmin.CreateTopic(topic, &sarama.TopicDetail{
+			NumPartitions:     numPartitions,
+			ReplicationFactor: replicationFactor,
+		}, false)
+		if err != nil {
+			log.Fatal(err)
+		}
 	},
 }

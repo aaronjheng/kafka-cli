@@ -35,6 +35,9 @@ func main() {
 
 	rootCmd.AddCommand(topicCmd)
 	topicCmd.AddCommand(topicListCmd)
+	topicCmd.AddCommand(topicCreateCmd)
+	topicCreateCmd.Flags().Int32("partitions", 1, "The number of partitions for the topic")
+	topicCreateCmd.Flags().Int16("replication-factor", 1, "The replication factor for each partition in the topic being created.")
 
 	rootCmd.AddCommand(groupCmd)
 	groupCmd.AddCommand(groupListCmd)
