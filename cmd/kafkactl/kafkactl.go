@@ -10,8 +10,6 @@ import (
 
 var cfg *config.Config
 var profile string
-var topic string
-var group string
 
 var rootCmd = &cobra.Command{
 	Use: "kafkactl",

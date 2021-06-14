@@ -73,11 +73,13 @@ func (c *Config) Cluster(profile string) ([]string, *sarama.Config, error) {
 func LoadConfig() (*Config, error) {
 	cfgRoot := path.Join(xdg.ConfigHome, "kafka")
 	if _, err := os.Stat(cfgRoot); os.IsNotExist(err) {
-		os.Mkdir(cfgRoot, 0755)
+		if err := os.Mkdir(cfgRoot, 0755); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	isConfigFileExists := true
-	configFilepath := path.Join(cfgRoot, "config.toml")
+	configFilepath := path.Join(cfgRoot, "config.toml2")
 	if _, err := os.Stat(configFilepath); err != nil {
 		if os.IsNotExist(err) {
 			isConfigFileExists = false
@@ -91,8 +93,10 @@ func LoadConfig() (*Config, error) {
 		log.Fatal(err)
 	}
 
-	if isConfigFileExists {
-		// TODO: Write head
+	if !isConfigFileExists {
+		if _, err := configFile.WriteString("# Kafkactl configuration\n\n"); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	defer configFile.Close()
