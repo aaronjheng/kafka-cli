@@ -27,6 +27,12 @@ var topicListCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
+		defer func() {
+			if err := cluserAdmin.Close(); err != nil {
+				log.Println(err)
+			}
+		}()
+
 		topics, err := cluserAdmin.ListTopics()
 		if err != nil {
 			log.Fatal(err)
@@ -54,6 +60,12 @@ var topicCreateCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		defer func() {
+			if err := cluserAdmin.Close(); err != nil {
+				log.Println(err)
+			}
+		}()
 
 		numPartitions, err := cmd.Flags().GetInt32("partitions")
 		if err != nil {

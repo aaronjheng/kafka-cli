@@ -25,7 +25,11 @@ var groupListCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		defer cluserAdmin.Close()
+		defer func() {
+			if err := cluserAdmin.Close(); err != nil {
+				log.Println(err)
+			}
+		}()
 
 		groups, err := cluserAdmin.ListConsumerGroups()
 		if err != nil {
