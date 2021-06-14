@@ -79,7 +79,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	isConfigFileExists := true
-	configFilepath := path.Join(cfgRoot, "config.toml2")
+	configFilepath := path.Join(cfgRoot, "config.toml")
 	if _, err := os.Stat(configFilepath); err != nil {
 		if os.IsNotExist(err) {
 			isConfigFileExists = false
