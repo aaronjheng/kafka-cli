@@ -30,6 +30,9 @@ func main() {
 	rootCmd.AddCommand(topicCmd)
 	topicCmd.AddCommand(topicListCmd)
 
+	rootCmd.AddCommand(groupCmd)
+	groupCmd.AddCommand(groupListCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
