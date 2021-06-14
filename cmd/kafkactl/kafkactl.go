@@ -10,6 +10,7 @@ import (
 )
 
 var cfg *config.Config
+var cfgFilepath string
 var profile string
 var topic string
 var partition int32
@@ -19,7 +20,7 @@ var rootCmd = &cobra.Command{
 	Short: "Command line tool for Apache Kafka",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		var err error
-		cfg, err = config.LoadConfig()
+		cfg, err = config.LoadConfig(cfgFilepath)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -28,6 +29,7 @@ var rootCmd = &cobra.Command{
 
 func main() {
 	rootCmd.PersistentFlags().StringVarP(&profile, "cluster", "c", "", "Cluster name to operate.")
+	rootCmd.PersistentFlags().StringVarP(&cfgFilepath, "config", "f", "", "Config file path.")
 
 	rootCmd.AddCommand(completionCmd)
 
