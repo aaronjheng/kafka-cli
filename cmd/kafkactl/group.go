@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 var groupCmd = &cobra.Command{
@@ -19,21 +19,21 @@ var groupCmd = &cobra.Command{
 var groupListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		cluserAdmin, err := newClusterAdmin()
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("newClusterAdmin error: %w", err)
 		}
 
 		defer func() {
 			if err := cluserAdmin.Close(); err != nil {
-				log.Println(err)
+				logger.Error("cluserAdmin.Close failed", zap.Error(err))
 			}
 		}()
 
 		groups, err := cluserAdmin.ListConsumerGroups()
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("cluserAdmin.ListConsumerGroups error: %w", err)
 		}
 
 		consumerGroups := []string{}
@@ -43,7 +43,7 @@ var groupListCmd = &cobra.Command{
 
 		details, err := cluserAdmin.DescribeConsumerGroups(consumerGroups)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("cluserAdmin.DescribeConsumerGroups error: %w", err)
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
@@ -55,5 +55,6 @@ var groupListCmd = &cobra.Command{
 
 		table.Render()
 
+		return nil
 	},
 }

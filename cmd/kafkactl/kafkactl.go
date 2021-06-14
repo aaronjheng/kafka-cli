@@ -1,16 +1,19 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/Shopify/sarama"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/aaronjheng/kafkactl/pkg/config"
 )
 
 var cfg *config.Config
 var cluster string
+var logger *zap.Logger
 
 var rootCmd = &cobra.Command{
 	Use:   "kafkactl",
@@ -18,13 +21,18 @@ var rootCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		cfgFilepath, err := cmd.Flags().GetString("config")
 		if err != nil {
-			log.Fatal(err)
+			logger.Fatal("config flag error", zap.Error(err))
 		}
 
 		cfg, err = config.LoadConfig(cfgFilepath)
 		if err != nil {
-			log.Fatal(err)
+			logger.Fatal("LoadConfig failed", zap.Error(err))
 		}
+
+		logger, _ = newLogger()
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		_ = logger.Sync()
 	},
 }
 
@@ -54,14 +62,15 @@ func main() {
 	consumerConsoleCmd.Flags().Int32P("partition", "p", -1, "The partition to consume from.")
 
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatal(err)
+		logger.Fatal("command failed", zap.Error(err))
 	}
+
 }
 
 func newCluster() (sarama.Client, error) {
 	brokers, clusterCfg, err := cfg.Cluster(cluster)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("cfg.Cluster error: %w", err)
 	}
 
 	return sarama.NewClient(brokers, clusterCfg)
@@ -70,7 +79,7 @@ func newCluster() (sarama.Client, error) {
 func newClusterAdmin() (sarama.ClusterAdmin, error) {
 	cluster, err := newCluster()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("newCluster error: %w", err)
 	}
 
 	return sarama.NewClusterAdminFromClient(cluster)
@@ -79,7 +88,7 @@ func newClusterAdmin() (sarama.ClusterAdmin, error) {
 func newSyncProducer() (sarama.SyncProducer, error) {
 	cluster, err := newCluster()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("newCluster error: %w", err)
 	}
 
 	cluster.Config().Producer.Return.Successes = true
@@ -90,8 +99,38 @@ func newSyncProducer() (sarama.SyncProducer, error) {
 func newConsumer() (sarama.Consumer, error) {
 	cluster, err := newCluster()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("newCluster error: %w", err)
 	}
 
 	return sarama.NewConsumerFromClient(cluster)
+}
+
+func newLogger() (*zap.Logger, error) {
+	cfg := &zap.Config{
+		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
+		Development: false,
+		Sampling: &zap.SamplingConfig{
+			Initial:    100,
+			Thereafter: 100,
+		},
+		Encoding: "json",
+		EncoderConfig: zapcore.EncoderConfig{
+			TimeKey:        "ts",
+			LevelKey:       "level",
+			NameKey:        "logger",
+			CallerKey:      "caller",
+			FunctionKey:    zapcore.OmitKey,
+			MessageKey:     "msg",
+			StacktraceKey:  "stacktrace",
+			LineEnding:     zapcore.DefaultLineEnding,
+			EncodeLevel:    zapcore.LowercaseLevelEncoder,
+			EncodeTime:     zapcore.EpochTimeEncoder,
+			EncodeDuration: zapcore.SecondsDurationEncoder,
+			EncodeCaller:   zapcore.ShortCallerEncoder,
+		},
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}
+
+	return cfg.Build()
 }

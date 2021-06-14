@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/Shopify/sarama"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 var consumerCmd = &cobra.Command{
@@ -18,26 +18,26 @@ var consumerCmd = &cobra.Command{
 
 var consumerConsoleCmd = &cobra.Command{
 	Use: "console",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		consumer, err := newConsumer()
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("newConsumer error: %w", err)
 		}
 
 		defer func() {
 			if err := consumer.Close(); err != nil {
-				log.Panicln(err)
+				logger.Error("consumer.Close failed", zap.Error(err))
 			}
 		}()
 
 		topic, err := cmd.Flags().GetString("topic")
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("get topic flag error: %w", err)
 		}
 
 		partition, err := cmd.Flags().GetInt32("partition")
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("get partition flag error: %w", err)
 		}
 
 		// Partition flag not specified
@@ -46,7 +46,7 @@ var consumerConsoleCmd = &cobra.Command{
 			var err error
 			partitions, err = consumer.Partitions(topic)
 			if err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("consumer.Partitions error: %w", err)
 			}
 		} else {
 			partitions = []int32{partition}
@@ -63,7 +63,8 @@ var consumerConsoleCmd = &cobra.Command{
 
 				partitionConsumer, err := consumer.ConsumePartition(topic, partition, sarama.OffsetNewest)
 				if err != nil {
-					log.Fatal(err)
+					logger.Error("consumer.ConsumePartition failed", zap.Error(err))
+					return
 				}
 
 				for {
@@ -83,5 +84,7 @@ var consumerConsoleCmd = &cobra.Command{
 		}()
 
 		wg.Wait()
+
+		return nil
 	},
 }
