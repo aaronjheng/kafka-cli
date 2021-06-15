@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 var configCmd = &cobra.Command{
@@ -20,11 +19,13 @@ var configCatCmd = &cobra.Command{
 		fmt.Printf("# %s\n", cfgPathname)
 		f, err := os.Open(cfgPathname)
 		if err != nil {
-			logger.Error("Open file error", zap.Error(err))
+			return fmt.Errorf("os.Open error: %w", err)
 		}
 		defer f.Close()
 
-		io.Copy(os.Stdout, f)
+		if _, err := io.Copy(os.Stdout, f); err != nil {
+			return fmt.Errorf("io.Copy error: %w", err)
+		}
 
 		return nil
 	},
