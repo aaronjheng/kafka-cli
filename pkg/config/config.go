@@ -14,8 +14,13 @@ import (
 )
 
 type Config struct {
+	filepath       string
 	DefaultCluster string              `mapstructure:"default_cluster"`
 	Clusters       map[string]*Cluster `mapstructure:"clusters"`
+}
+
+func (c *Config) Filepath() string {
+	return c.filepath
 }
 
 type Cluster struct {
@@ -107,7 +112,9 @@ func LoadConfig(cfgFilepath string) (*Config, error) {
 
 	}
 
-	cfg := &Config{}
+	cfg := &Config{
+		filepath: viper.GetViper().ConfigFileUsed(),
+	}
 	if err := viper.Unmarshal(cfg); err != nil {
 		log.Fatal(err)
 	}

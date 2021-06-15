@@ -41,6 +41,8 @@ func main() {
 	rootCmd.PersistentFlags().StringP("config", "f", "", "Config file path.")
 
 	rootCmd.AddCommand(completionCmd)
+	rootCmd.AddCommand(configCmd)
+	configCmd.AddCommand(configCatCmd)
 
 	rootCmd.AddCommand(topicCmd)
 	topicCmd.AddCommand(topicListCmd)
