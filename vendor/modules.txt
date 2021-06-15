@@ -1,3 +1,6 @@
+# github.com/MakeNowJust/heredoc/v2 v2.0.1
+## explicit
+github.com/MakeNowJust/heredoc/v2
 # github.com/Shopify/sarama v1.29.0
 ## explicit
 github.com/Shopify/sarama
