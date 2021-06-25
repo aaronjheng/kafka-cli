@@ -1,7 +1,7 @@
 # github.com/MakeNowJust/heredoc/v2 v2.0.1
 ## explicit
 github.com/MakeNowJust/heredoc/v2
-# github.com/Shopify/sarama v1.29.0
+# github.com/Shopify/sarama v1.29.1
 ## explicit
 github.com/Shopify/sarama
 # github.com/adrg/xdg v0.3.3
@@ -132,17 +132,14 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
-## explicit
+# golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 golang.org/x/crypto/md4
 golang.org/x/crypto/pbkdf2
-# golang.org/x/net v0.0.0-20210610132358-84b48f89b13b
-## explicit
+# golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 golang.org/x/net/http2/hpack
 golang.org/x/net/internal/socks
 golang.org/x/net/proxy
-# golang.org/x/sys v0.0.0-20210611083646-a4fc73990273
-## explicit
+# golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.6
