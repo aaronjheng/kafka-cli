@@ -13,5 +13,5 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942 // indirect
-	go.uber.org/zap v1.17.0
+	go.uber.org/zap v1.18.1
 )
