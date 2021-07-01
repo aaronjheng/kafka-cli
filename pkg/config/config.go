@@ -97,9 +97,9 @@ func LoadConfig(cfgFilepath string) (*Config, error) {
 		viper.SetConfigFile(cfgFilepath)
 	} else {
 		viper.SetConfigName("config")
-		viper.SetConfigType("toml")
-		viper.AddConfigPath(cfgRoot)
+		viper.SetConfigType("yaml")
 		viper.AddConfigPath(".")
+		viper.AddConfigPath(cfgRoot)
 	}
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -109,7 +109,6 @@ func LoadConfig(cfgFilepath string) (*Config, error) {
 		} else {
 			log.Fatal(err)
 		}
-
 	}
 
 	cfg := &Config{
