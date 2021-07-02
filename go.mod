@@ -3,7 +3,6 @@ module github.com/aaronjheng/kafkactl
 go 1.16
 
 require (
-	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/Shopify/sarama v1.29.1
 	github.com/adrg/xdg v0.3.3
 	github.com/klauspost/compress v1.13.0 // indirect
