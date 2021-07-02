@@ -40,7 +40,6 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&cluster, "cluster", "c", "", "Cluster name to operate.")
 	rootCmd.PersistentFlags().StringP("config", "f", "", "Config file path.")
 
-	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(configCmd)
 	configCmd.AddCommand(configCatCmd)
 
