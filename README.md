@@ -8,7 +8,7 @@ go install github.com/aaronjheng/kafkactl/cmd/kafkactl@latest
 
 ## Configuration
 
-See [config.toml.example](contrib/config.toml.example) for reference.
+See [config.yml.example](contrib/config.yml.example) for reference.
 
 ## License
 
