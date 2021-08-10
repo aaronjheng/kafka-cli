@@ -62,6 +62,8 @@ func main() {
 	consumerConsoleCmd.Flags().StringP("topic", "t", "", "The topic to consume from")
 	consumerConsoleCmd.Flags().Int32P("partition", "p", -1, "The partition to consume from.")
 
+	rootCmd.AddCommand(versionCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		logger.Fatal("command failed", zap.Error(err))
 	}
