@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/Shopify/sarama v1.29.1
-	github.com/adrg/xdg v0.3.3
+	github.com/adrg/xdg v0.3.4
 	github.com/klauspost/compress v1.13.0 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/olekukonko/tablewriter v0.0.5
