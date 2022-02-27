@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:embed version.txt
+//go:embed VERSION
 var version string
 
 var versionCmd = &cobra.Command{
