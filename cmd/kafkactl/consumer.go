@@ -67,11 +67,8 @@ var consumerConsoleCmd = &cobra.Command{
 					return
 				}
 
-				for {
-					select {
-					case msg := <-partitionConsumer.Messages():
-						msgCh <- string(msg.Value)
-					}
+				for msg := range partitionConsumer.Messages() {
+					msgCh <- string(msg.Value)
 				}
 
 			}(partition)
