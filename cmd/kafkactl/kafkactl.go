@@ -8,12 +8,14 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/aaronjheng/kafkactl/pkg/config"
+	"github.com/aaronjheng/kafkactl/internal/config"
 )
 
-var cfg *config.Config
-var cluster string
-var logger *zap.Logger
+var (
+	cfg     *config.Config
+	cluster string
+	logger  *zap.Logger
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "kafkactl",
@@ -67,7 +69,6 @@ func main() {
 	if err := rootCmd.Execute(); err != nil {
 		logger.Fatal("command failed", zap.Error(err))
 	}
-
 }
 
 func newCluster() (sarama.Client, error) {
