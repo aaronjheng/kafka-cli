@@ -3,7 +3,7 @@ module github.com/aaronjheng/kafkactl
 go 1.18
 
 require (
-	github.com/Shopify/sarama v1.37.0
+	github.com/Shopify/sarama v1.37.1
 	github.com/adrg/xdg v0.4.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.5.0
