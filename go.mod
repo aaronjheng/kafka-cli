@@ -1,6 +1,6 @@
 module github.com/aaronjheng/kafkactl
 
-go 1.18
+go 1.19
 
 require (
 	github.com/Shopify/sarama v1.37.2
