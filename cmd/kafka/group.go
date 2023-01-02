@@ -20,20 +20,20 @@ var groupListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cluserAdmin, err := newClusterAdmin()
+		clusterAdmin, err := newClusterAdmin()
 		if err != nil {
 			return fmt.Errorf("newClusterAdmin error: %w", err)
 		}
 
 		defer func() {
-			if err := cluserAdmin.Close(); err != nil {
-				logger.Error("cluserAdmin.Close failed", zap.Error(err))
+			if err := clusterAdmin.Close(); err != nil {
+				logger.Error("clusterAdmin.Close failed", zap.Error(err))
 			}
 		}()
 
-		groups, err := cluserAdmin.ListConsumerGroups()
+		groups, err := clusterAdmin.ListConsumerGroups()
 		if err != nil {
-			return fmt.Errorf("cluserAdmin.ListConsumerGroups error: %w", err)
+			return fmt.Errorf("clusterAdmin.ListConsumerGroups error: %w", err)
 		}
 
 		consumerGroups := []string{}
@@ -41,13 +41,13 @@ var groupListCmd = &cobra.Command{
 			consumerGroups = append(consumerGroups, k)
 		}
 
-		details, err := cluserAdmin.DescribeConsumerGroups(consumerGroups)
+		details, err := clusterAdmin.DescribeConsumerGroups(consumerGroups)
 		if err != nil {
-			return fmt.Errorf("cluserAdmin.DescribeConsumerGroups error: %w", err)
+			return fmt.Errorf("clusterAdmin.DescribeConsumerGroups error: %w", err)
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Consumer Group", "State", "Protocal Type", "Protocal", "Members"})
+		table.SetHeader([]string{"Consumer Group", "State", "Protocol Type", "Protocol", "Members"})
 
 		for _, detail := range details {
 			table.Append([]string{detail.GroupId, detail.State, detail.ProtocolType, detail.Protocol, fmt.Sprintf("%d", len(detail.Members))})

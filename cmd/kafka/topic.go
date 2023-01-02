@@ -22,20 +22,20 @@ var topicCmd = &cobra.Command{
 var topicListCmd = &cobra.Command{
 	Use: "list",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cluserAdmin, err := newClusterAdmin()
+		clusterAdmin, err := newClusterAdmin()
 		if err != nil {
 			return fmt.Errorf("newClusterAdmin error: %w", err)
 		}
 
 		defer func() {
-			if err := cluserAdmin.Close(); err != nil {
-				logger.Error("cluserAdmin.Close failed", zap.Error(err))
+			if err := clusterAdmin.Close(); err != nil {
+				logger.Error("clusterAdmin.Close failed", zap.Error(err))
 			}
 		}()
 
-		topics, err := cluserAdmin.ListTopics()
+		topics, err := clusterAdmin.ListTopics()
 		if err != nil {
-			return fmt.Errorf("cluserAdmin.ListTopics error: %w", err)
+			return fmt.Errorf("clusterAdmin.ListTopics error: %w", err)
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
@@ -57,14 +57,14 @@ var topicCreateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		topic := args[0]
 
-		cluserAdmin, err := newClusterAdmin()
+		clusterAdmin, err := newClusterAdmin()
 		if err != nil {
 			return fmt.Errorf("newClusterAdmin error: %w", err)
 		}
 
 		defer func() {
-			if err := cluserAdmin.Close(); err != nil {
-				logger.Error("cluserAdmin.Close failed", zap.Error(err))
+			if err := clusterAdmin.Close(); err != nil {
+				logger.Error("clusterAdmin.Close failed", zap.Error(err))
 			}
 		}()
 
@@ -78,12 +78,12 @@ var topicCreateCmd = &cobra.Command{
 			return fmt.Errorf("get replication-factor flag error: %w", err)
 		}
 
-		err = cluserAdmin.CreateTopic(topic, &sarama.TopicDetail{
+		err = clusterAdmin.CreateTopic(topic, &sarama.TopicDetail{
 			NumPartitions:     numPartitions,
 			ReplicationFactor: replicationFactor,
 		}, false)
 		if err != nil {
-			return fmt.Errorf("cluserAdmin.CreateTopic error: %w", err)
+			return fmt.Errorf("clusterAdmin.CreateTopic error: %w", err)
 		}
 
 		return nil
@@ -96,19 +96,19 @@ var topicDeleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		topic := args[0]
 
-		cluserAdmin, err := newClusterAdmin()
+		clusterAdmin, err := newClusterAdmin()
 		if err != nil {
 			return fmt.Errorf("newClusterAdmin error: %w", err)
 		}
 
 		defer func() {
-			if err := cluserAdmin.Close(); err != nil {
-				logger.Error("cluserAdmin.Close failed", zap.Error(err))
+			if err := clusterAdmin.Close(); err != nil {
+				logger.Error("clusterAdmin.Close failed", zap.Error(err))
 			}
 		}()
 
-		if err := cluserAdmin.DeleteTopic(topic); err != nil {
-			return fmt.Errorf("cluserAdmin.DeleteTopic error: %w", err)
+		if err := clusterAdmin.DeleteTopic(topic); err != nil {
+			return fmt.Errorf("clusterAdmin.DeleteTopic error: %w", err)
 		}
 
 		return nil
