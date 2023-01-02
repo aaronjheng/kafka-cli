@@ -6,7 +6,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
+	"golang.org/x/exp/slog"
 )
 
 var groupCmd = &cobra.Command{
@@ -27,7 +27,7 @@ var groupListCmd = &cobra.Command{
 
 		defer func() {
 			if err := clusterAdmin.Close(); err != nil {
-				logger.Error("clusterAdmin.Close failed", zap.Error(err))
+				slog.Error("clusterAdmin.Close failed", err)
 			}
 		}()
 

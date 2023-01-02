@@ -7,7 +7,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
+	"golang.org/x/exp/slog"
 )
 
 var producerCmd = &cobra.Command{
@@ -27,7 +27,7 @@ var producerConsoleCmd = &cobra.Command{
 
 		defer func() {
 			if err := producer.Close(); err != nil {
-				logger.Error("producer.Close failed", zap.Error(err))
+				slog.Error("producer.Close failed", err)
 			}
 		}()
 
@@ -44,7 +44,7 @@ var producerConsoleCmd = &cobra.Command{
 			}
 			_, _, err := producer.SendMessage(msg)
 			if err != nil {
-				logger.Error("producer.SendMessage failed", zap.Error(err))
+				slog.Error("producer.SendMessage failed", err)
 			}
 		}
 

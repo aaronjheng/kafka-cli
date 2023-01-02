@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/Shopify/sarama"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/slog"
 
 	"github.com/aaronjheng/kafka-cli/internal/config"
 )
@@ -14,31 +14,31 @@ import (
 var (
 	cfg     *config.Config
 	cluster string
-	logger  *zap.Logger
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "kafka",
-	Short: "Command line tool for Apache Kafka",
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	Use:          "kafka",
+	Short:        "Command line tool for Apache Kafka",
+	SilenceUsage: true,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		cfgFilepath, err := cmd.Flags().GetString("config")
 		if err != nil {
-			logger.Fatal("config flag error", zap.Error(err))
+			return fmt.Errorf("config flag error: %w", err)
 		}
 
 		cfg, err = config.LoadConfig(cfgFilepath)
 		if err != nil {
-			logger.Fatal("LoadConfig failed", zap.Error(err))
+			return fmt.Errorf("config flag error: %w", err)
 		}
 
-		logger, _ = newLogger()
-	},
-	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		_ = logger.Sync()
+		return nil
 	},
 }
 
 func main() {
+	// Bootstrap logging
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr)))
+
 	rootCmd.PersistentFlags().StringVarP(&cluster, "cluster", "c", "", "Cluster name to operate.")
 	rootCmd.PersistentFlags().StringP("config", "f", "", "Config file path.")
 
@@ -68,7 +68,7 @@ func main() {
 	rootCmd.AddCommand(completionCmd)
 
 	if err := rootCmd.Execute(); err != nil {
-		logger.Fatal("command failed", zap.Error(err))
+		os.Exit(1)
 	}
 }
 
@@ -108,34 +108,4 @@ func newConsumer() (sarama.Consumer, error) {
 	}
 
 	return sarama.NewConsumerFromClient(cluster)
-}
-
-func newLogger() (*zap.Logger, error) {
-	cfg := &zap.Config{
-		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
-		Development: false,
-		Sampling: &zap.SamplingConfig{
-			Initial:    100,
-			Thereafter: 100,
-		},
-		Encoding: "json",
-		EncoderConfig: zapcore.EncoderConfig{
-			TimeKey:        "ts",
-			LevelKey:       "level",
-			NameKey:        "logger",
-			CallerKey:      "caller",
-			FunctionKey:    zapcore.OmitKey,
-			MessageKey:     "msg",
-			StacktraceKey:  "stacktrace",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    zapcore.LowercaseLevelEncoder,
-			EncodeTime:     zapcore.EpochTimeEncoder,
-			EncodeDuration: zapcore.SecondsDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
-		},
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
-	}
-
-	return cfg.Build()
 }

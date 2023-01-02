@@ -6,7 +6,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
+	"golang.org/x/exp/slog"
 )
 
 var consumerCmd = &cobra.Command{
@@ -26,7 +26,7 @@ var consumerConsoleCmd = &cobra.Command{
 
 		defer func() {
 			if err := consumer.Close(); err != nil {
-				logger.Error("consumer.Close failed", zap.Error(err))
+				slog.Error("consumer.Close failed", err)
 			}
 		}()
 
@@ -63,14 +63,13 @@ var consumerConsoleCmd = &cobra.Command{
 
 				partitionConsumer, err := consumer.ConsumePartition(topic, partition, sarama.OffsetNewest)
 				if err != nil {
-					logger.Error("consumer.ConsumePartition failed", zap.Error(err))
+					slog.Error("consumer.ConsumePartition failed", err)
 					return
 				}
 
 				for msg := range partitionConsumer.Messages() {
 					msgCh <- string(msg.Value)
 				}
-
 			}(partition)
 		}
 
