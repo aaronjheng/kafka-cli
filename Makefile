@@ -1,7 +1,8 @@
-include .bingo/Variables.mk
+-include .env
 
 .ONESHELL:
+.SHELLFLAGS = -ec
 
 .PHONY: lint
-lint: $(GOLANGCI_LINT)
-	@$(GOLANGCI_LINT) run --allow-parallel-runners
+lint:
+	@golangci-lint run --allow-parallel-runners
