@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/aaronjheng/kafkactl/internal/config"
+	"github.com/aaronjheng/kafka-cli/internal/config"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "kafkactl",
+	Use:   "kafka",
 	Short: "Command line tool for Apache Kafka",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		cfgFilepath, err := cmd.Flags().GetString("config")

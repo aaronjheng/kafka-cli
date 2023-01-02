@@ -88,7 +88,7 @@ var defaultConfig = &Config{
 func LoadConfig(cfgFilepath string) (*Config, error) {
 	cfgRoot := path.Join(xdg.ConfigHome, "kafka")
 	if _, err := os.Stat(cfgRoot); os.IsNotExist(err) {
-		if err := os.Mkdir(cfgRoot, 0755); err != nil {
+		if err := os.Mkdir(cfgRoot, 0o755); err != nil {
 			log.Fatal(err)
 		}
 	}

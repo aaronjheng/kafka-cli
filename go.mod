@@ -1,4 +1,4 @@
-module github.com/aaronjheng/kafkactl
+module github.com/aaronjheng/kafka-cli
 
 go 1.19
 
