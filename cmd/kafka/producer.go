@@ -3,11 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log/slog"
 	"os"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 )
 
 var producerCmd = &cobra.Command{

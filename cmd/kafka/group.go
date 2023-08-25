@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 )
 
 var groupCmd = &cobra.Command{

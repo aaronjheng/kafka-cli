@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 
-	"github.com/aaronjheng/kafka-cli/internal/config"
+	"github.com/aaronjheng/kafka-cli/pkg/config"
 )
 
 var (
@@ -37,7 +37,7 @@ var rootCmd = &cobra.Command{
 
 func main() {
 	// Bootstrap logging
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr)))
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
 
 	rootCmd.PersistentFlags().StringVarP(&cluster, "cluster", "c", "", "Cluster name to operate.")
 	rootCmd.PersistentFlags().StringP("config", "f", "", "Config file path.")

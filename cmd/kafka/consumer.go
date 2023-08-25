@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"sync"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 )
 
 var consumerCmd = &cobra.Command{

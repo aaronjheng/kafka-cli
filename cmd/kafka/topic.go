@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 )
 
 // TODO: kafka-topics --config
