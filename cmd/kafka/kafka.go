@@ -8,7 +8,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/spf13/cobra"
 
-	"github.com/aaronjheng/kafka-cli/pkg/config"
+	"github.com/aaronjheng/kafka-cli/internal/config"
 )
 
 var (
