@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/IBM/sarama"
+	"github.com/aaronjheng/kafka-cli/internal/ssh"
 )
 
 type Kafka struct {
@@ -35,6 +36,16 @@ func New(c *Config) (*Kafka, error) {
 		cfg.Net.SASL.Mechanism = sarama.SASLMechanism(c.SASL.Mechanism)
 		cfg.Net.SASL.User = c.SASL.Username
 		cfg.Net.SASL.Password = c.SASL.Password
+	}
+
+	if c.SSH != nil {
+		dialer, err := ssh.NewProxyDialer(c.SSH)
+		if err != nil {
+			return nil, fmt.Errorf("newSSHDialFunc error: %w", err)
+		}
+
+		cfg.Net.Proxy.Enable = true
+		cfg.Net.Proxy.Dialer = dialer
 	}
 
 	client, err := sarama.NewClient(c.Brokers, cfg)

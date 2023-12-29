@@ -1,9 +1,14 @@
 package kafka
 
+import (
+	"github.com/aaronjheng/kafka-cli/internal/ssh"
+)
+
 type Config struct {
-	Brokers []string `mapstructure:"brokers"`
-	TLS     *TLS     `mapstructure:"tls"`
-	SASL    *SASL    `mapstructure:"sasl"`
+	Brokers []string    `mapstructure:"brokers"`
+	TLS     *TLS        `mapstructure:"tls"`
+	SASL    *SASL       `mapstructure:"sasl"`
+	SSH     *ssh.Config `mapstructure:"ssh_tunnel"`
 }
 
 type TLS struct {
