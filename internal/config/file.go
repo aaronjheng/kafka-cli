@@ -8,11 +8,13 @@ import (
 
 	"github.com/adrg/xdg"
 	"github.com/spf13/viper"
+
+	"github.com/aaronjheng/kafka-cli/internal/kafka"
 )
 
 var defaultConfig = &Config{
 	DefaultCluster: "default",
-	Clusters: map[string]*Cluster{
+	Clusters: map[string]*kafka.Config{
 		"default": {
 			Brokers: []string{"127.0.0.1:9092"},
 		},

@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/aaronjheng/kafka-cli/internal/config"
+	"github.com/aaronjheng/kafka-cli/internal/kafka"
 )
 
 var (
@@ -72,13 +73,13 @@ func main() {
 	}
 }
 
-func newCluster() (sarama.Client, error) {
-	brokers, clusterCfg, err := cfg.Cluster(cluster)
+func newCluster() (*kafka.Kafka, error) {
+	cfg, err := cfg.Cluster(cluster)
 	if err != nil {
 		return nil, fmt.Errorf("cfg.Cluster error: %w", err)
 	}
 
-	return sarama.NewClient(brokers, clusterCfg)
+	return kafka.New(cfg)
 }
 
 func newClusterAdmin() (sarama.ClusterAdmin, error) {
