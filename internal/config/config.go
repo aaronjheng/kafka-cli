@@ -3,7 +3,7 @@ package config
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/IBM/sarama"
@@ -43,7 +43,7 @@ func (c *Config) Cluster(profile string) ([]string, *sarama.Config, error) {
 
 	prof, ok := c.Clusters[profile]
 	if !ok {
-		log.Fatal("No profile specified")
+		return nil, nil, fmt.Errorf("no profile specified: %s", profile)
 	}
 
 	cfg := sarama.NewConfig()
@@ -52,7 +52,7 @@ func (c *Config) Cluster(profile string) ([]string, *sarama.Config, error) {
 
 		raw, err := os.ReadFile(prof.TLS.CAFile)
 		if err != nil {
-			log.Fatal(err)
+			return nil, nil, fmt.Errorf("os.ReadFile error: %w", err)
 		}
 		certPool := x509.NewCertPool()
 		certPool.AppendCertsFromPEM(raw)
