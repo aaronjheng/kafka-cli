@@ -46,6 +46,7 @@ func New(c *Config) (*Kafka, error) {
 
 		cfg.Net.Proxy.Enable = true
 		cfg.Net.Proxy.Dialer = dialer
+		cfg.Net.DialTimeout = 0
 	}
 
 	client, err := sarama.NewClient(c.Brokers, cfg)
