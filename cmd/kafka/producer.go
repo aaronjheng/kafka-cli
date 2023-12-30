@@ -10,44 +10,56 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var producerCmd = &cobra.Command{
-	Use:   "producer",
-	Short: "producer",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
+func producerCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "producer",
+		Short: "producer",
+		Run: func(cmd *cobra.Command, args []string) {
+		},
+	}
+
+	cmd.AddCommand(producerConsoleCmd())
+
+	return cmd
 }
 
-var producerConsoleCmd = &cobra.Command{
-	Use: "console",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		producer, err := newSyncProducer()
-		if err != nil {
-			return fmt.Errorf("newSyncProducer error: %w", err)
-		}
-
-		defer func() {
-			if err := producer.Close(); err != nil {
-				slog.Error("producer.Close failed", err)
-			}
-		}()
-
-		topic, err := cmd.Flags().GetString("topic")
-		if err != nil {
-			return fmt.Errorf("get topic flag error: %w", err)
-		}
-
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			msg := &sarama.ProducerMessage{
-				Topic: topic,
-				Value: sarama.StringEncoder(scanner.Text()),
-			}
-			_, _, err := producer.SendMessage(msg)
+func producerConsoleCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "console",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			producer, err := newSyncProducer()
 			if err != nil {
-				slog.Error("producer.SendMessage failed", err)
+				return fmt.Errorf("newSyncProducer error: %w", err)
 			}
-		}
 
-		return nil
-	},
+			defer func() {
+				if err := producer.Close(); err != nil {
+					slog.Error("producer.Close failed", err)
+				}
+			}()
+
+			topic, err := cmd.Flags().GetString("topic")
+			if err != nil {
+				return fmt.Errorf("get topic flag error: %w", err)
+			}
+
+			scanner := bufio.NewScanner(os.Stdin)
+			for scanner.Scan() {
+				msg := &sarama.ProducerMessage{
+					Topic: topic,
+					Value: sarama.StringEncoder(scanner.Text()),
+				}
+				_, _, err := producer.SendMessage(msg)
+				if err != nil {
+					slog.Error("producer.SendMessage failed", err)
+				}
+			}
+
+			return nil
+		},
+	}
+
+	cmd.Flags().StringP("topic", "t", "", "The topic to produce messages to.")
+
+	return cmd
 }

@@ -12,43 +12,58 @@ import (
 
 // TODO: kafka-topics --config
 
-var topicCmd = &cobra.Command{
-	Use:   "topic",
-	Short: "topic",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
+func topicCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "topic",
+		Short: "topic",
+		Run: func(cmd *cobra.Command, args []string) {
+		},
+	}
+
+	cmd.AddCommand(topicListCmd())
+	cmd.AddCommand(topicCreateCmd)
+	cmd.AddCommand(topicDeleteCmd)
+
+	return cmd
 }
 
-var topicListCmd = &cobra.Command{
-	Use: "list",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		clusterAdmin, err := newClusterAdmin()
-		if err != nil {
-			return fmt.Errorf("newClusterAdmin error: %w", err)
-		}
-
-		defer func() {
-			if err := clusterAdmin.Close(); err != nil {
-				slog.Error("clusterAdmin.Close failed", err)
+func topicListCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "list",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clusterAdmin, err := newClusterAdmin()
+			if err != nil {
+				return fmt.Errorf("newClusterAdmin error: %w", err)
 			}
-		}()
 
-		topics, err := clusterAdmin.ListTopics()
-		if err != nil {
-			return fmt.Errorf("clusterAdmin.ListTopics error: %w", err)
-		}
+			defer func() {
+				if err := clusterAdmin.Close(); err != nil {
+					slog.Error("clusterAdmin.Close failed", err)
+				}
+			}()
 
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Topic", "Number of Partitions", "Replication Factor"})
+			topics, err := clusterAdmin.ListTopics()
+			if err != nil {
+				return fmt.Errorf("clusterAdmin.ListTopics error: %w", err)
+			}
 
-		for k, v := range topics {
-			table.Append([]string{k, fmt.Sprintf("%d", v.NumPartitions), fmt.Sprintf("%d", v.ReplicationFactor)})
-		}
+			table := tablewriter.NewWriter(os.Stdout)
+			table.SetHeader([]string{"Topic", "Number of Partitions", "Replication Factor"})
 
-		table.Render()
+			for k, v := range topics {
+				table.Append([]string{k, fmt.Sprintf("%d", v.NumPartitions), fmt.Sprintf("%d", v.ReplicationFactor)})
+			}
 
-		return nil
-	},
+			table.Render()
+
+			return nil
+		},
+	}
+
+	cmd.Flags().Int32("partitions", 1, "The number of partitions for the topic")
+	cmd.Flags().Int16("replication-factor", 1, "The replication factor for each partition in the topic being created.")
+
+	return cmd
 }
 
 var topicCreateCmd = &cobra.Command{

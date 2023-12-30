@@ -9,11 +9,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var groupCmd = &cobra.Command{
-	Use:   "group",
-	Short: "group",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
+func groupCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "group",
+		Short: "group",
+	}
+
+	cmd.AddCommand(groupListCmd)
+
+	return cmd
 }
 
 var groupListCmd = &cobra.Command{

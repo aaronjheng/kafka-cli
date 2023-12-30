@@ -8,25 +8,35 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var configCmd = &cobra.Command{
-	Use: "config",
+func configCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "config",
+	}
+
+	cmd.AddCommand(configCatCmd())
+
+	return cmd
 }
 
-var configCatCmd = &cobra.Command{
-	Use: "cat",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cfgPathname := cfg.Filepath()
-		fmt.Printf("# %s\n", cfgPathname)
-		f, err := os.Open(cfgPathname)
-		if err != nil {
-			return fmt.Errorf("os.Open error: %w", err)
-		}
-		defer f.Close()
+func configCatCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "cat",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfgPathname := cfg.Filepath()
+			fmt.Printf("# %s\n", cfgPathname)
+			f, err := os.Open(cfgPathname)
+			if err != nil {
+				return fmt.Errorf("os.Open error: %w", err)
+			}
+			defer f.Close()
 
-		if _, err := io.Copy(os.Stdout, f); err != nil {
-			return fmt.Errorf("io.Copy error: %w", err)
-		}
+			if _, err := io.Copy(os.Stdout, f); err != nil {
+				return fmt.Errorf("io.Copy error: %w", err)
+			}
 
-		return nil
-	},
+			return nil
+		},
+	}
+
+	return cmd
 }
