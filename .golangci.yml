@@ -1,8 +1,22 @@
 linters:
-  disable-all: false
+  disable-all: true
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+    - gofumpt
+    - gci
 
 linters-settings:
   gofmt:
     simplify: true
-  goimports:
-    local-prefixes: github.com/aaronjheng
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/aaronjheng/kafka-cli)
+    custom-order: true

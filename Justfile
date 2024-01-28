@@ -1,4 +1,4 @@
 set dotenv-load
 
 lint:
-	golangci-lint run --allow-parallel-runners
+	golangci-lint run --verbose --allow-parallel-runners

@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/IBM/sarama"
+
 	"github.com/aaronjheng/kafka-cli/internal/ssh"
 )
 
