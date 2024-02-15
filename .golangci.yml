@@ -13,8 +13,6 @@ linters:
     - unconvert
 
 linters-settings:
-  gofmt:
-    simplify: true
   gci:
     sections:
       - standard

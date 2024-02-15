@@ -8,4 +8,5 @@ ignoreWords:
   - cafile
   - olekukonko
   - sarama
+  - unconvert
 import: []
