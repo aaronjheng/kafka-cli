@@ -10,6 +10,7 @@ linters:
 
     - gofumpt
     - gci
+    - unconvert
 
 linters-settings:
   gofmt:
