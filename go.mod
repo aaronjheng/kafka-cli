@@ -3,7 +3,7 @@ module github.com/aaronjheng/kafka-cli
 go 1.22
 
 require (
-	github.com/IBM/sarama v1.42.2
+	github.com/IBM/sarama v1.43.0
 	github.com/adrg/xdg v0.4.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.8.0
@@ -14,7 +14,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/eapache/go-resiliency v1.5.0 // indirect
+	github.com/eapache/go-resiliency v1.6.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -29,7 +29,7 @@ require (
 	github.com/jcmturner/gofork v1.7.6 // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
-	github.com/klauspost/compress v1.17.6 // indirect
+	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
