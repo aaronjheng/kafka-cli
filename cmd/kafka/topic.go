@@ -21,7 +21,7 @@ func topicCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(topicListCmd())
-	cmd.AddCommand(topicCreateCmd)
+	cmd.AddCommand(topicCreateCmd())
 	cmd.AddCommand(topicDeleteCmd)
 
 	return cmd
@@ -60,49 +60,53 @@ func topicListCmd() *cobra.Command {
 		},
 	}
 
+	return cmd
+}
+
+func topicCreateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:  "create",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			topic := args[0]
+
+			clusterAdmin, err := newClusterAdmin()
+			if err != nil {
+				return fmt.Errorf("newClusterAdmin error: %w", err)
+			}
+
+			defer func() {
+				if err := clusterAdmin.Close(); err != nil {
+					slog.Error("clusterAdmin.Close failed", err)
+				}
+			}()
+
+			numPartitions, err := cmd.Flags().GetInt32("partitions")
+			if err != nil {
+				return fmt.Errorf("get partitions flag error: %w", err)
+			}
+
+			replicationFactor, err := cmd.Flags().GetInt16("replication-factor")
+			if err != nil {
+				return fmt.Errorf("get replication-factor flag error: %w", err)
+			}
+
+			err = clusterAdmin.CreateTopic(topic, &sarama.TopicDetail{
+				NumPartitions:     numPartitions,
+				ReplicationFactor: replicationFactor,
+			}, false)
+			if err != nil {
+				return fmt.Errorf("clusterAdmin.CreateTopic error: %w", err)
+			}
+
+			return nil
+		},
+	}
+
 	cmd.Flags().Int32("partitions", 1, "The number of partitions for the topic")
 	cmd.Flags().Int16("replication-factor", 1, "The replication factor for each partition in the topic being created.")
 
 	return cmd
-}
-
-var topicCreateCmd = &cobra.Command{
-	Use:  "create",
-	Args: cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		topic := args[0]
-
-		clusterAdmin, err := newClusterAdmin()
-		if err != nil {
-			return fmt.Errorf("newClusterAdmin error: %w", err)
-		}
-
-		defer func() {
-			if err := clusterAdmin.Close(); err != nil {
-				slog.Error("clusterAdmin.Close failed", err)
-			}
-		}()
-
-		numPartitions, err := cmd.Flags().GetInt32("partitions")
-		if err != nil {
-			return fmt.Errorf("get partitions flag error: %w", err)
-		}
-
-		replicationFactor, err := cmd.Flags().GetInt16("replication-factor")
-		if err != nil {
-			return fmt.Errorf("get replication-factor flag error: %w", err)
-		}
-
-		err = clusterAdmin.CreateTopic(topic, &sarama.TopicDetail{
-			NumPartitions:     numPartitions,
-			ReplicationFactor: replicationFactor,
-		}, false)
-		if err != nil {
-			return fmt.Errorf("clusterAdmin.CreateTopic error: %w", err)
-		}
-
-		return nil
-	},
 }
 
 var topicDeleteCmd = &cobra.Command{
