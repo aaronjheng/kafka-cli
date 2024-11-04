@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/IBM/sarama v1.43.3
-	github.com/adrg/xdg v0.5.1
+	github.com/adrg/xdg v0.5.3
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
