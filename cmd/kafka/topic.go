@@ -38,7 +38,7 @@ func topicListCmd() *cobra.Command {
 
 			defer func() {
 				if err := clusterAdmin.Close(); err != nil {
-					slog.Error("clusterAdmin.Close failed", err)
+					slog.Error("clusterAdmin.Close failed", slog.Any("error", err))
 				}
 			}()
 
@@ -77,7 +77,7 @@ func topicCreateCmd() *cobra.Command {
 
 			defer func() {
 				if err := clusterAdmin.Close(); err != nil {
-					slog.Error("clusterAdmin.Close failed", err)
+					slog.Error("clusterAdmin.Close failed", slog.Any("error", err))
 				}
 			}()
 
@@ -122,7 +122,7 @@ var topicDeleteCmd = &cobra.Command{
 
 		defer func() {
 			if err := clusterAdmin.Close(); err != nil {
-				slog.Error("clusterAdmin.Close failed", err)
+				slog.Error("clusterAdmin.Close failed", slog.Any("error", err))
 			}
 		}()
 

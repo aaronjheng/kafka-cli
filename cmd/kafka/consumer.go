@@ -33,7 +33,7 @@ func consumerConsoleCmd() *cobra.Command {
 
 			defer func() {
 				if err := consumer.Close(); err != nil {
-					slog.Error("consumer.Close failed", err)
+					slog.Error("consumer.Close failed", slog.Any("error", err))
 				}
 			}()
 
@@ -70,7 +70,7 @@ func consumerConsoleCmd() *cobra.Command {
 
 					partitionConsumer, err := consumer.ConsumePartition(topic, partition, sarama.OffsetNewest)
 					if err != nil {
-						slog.Error("consumer.ConsumePartition failed", err)
+						slog.Error("consumer.ConsumePartition failed", slog.Any("error", err))
 						return
 					}
 

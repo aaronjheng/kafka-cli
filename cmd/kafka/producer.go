@@ -34,7 +34,7 @@ func producerConsoleCmd() *cobra.Command {
 
 			defer func() {
 				if err := producer.Close(); err != nil {
-					slog.Error("producer.Close failed", err)
+					slog.Error("producer.Close failed", slog.Any("error", err))
 				}
 			}()
 
@@ -45,13 +45,19 @@ func producerConsoleCmd() *cobra.Command {
 
 			scanner := bufio.NewScanner(os.Stdin)
 			for scanner.Scan() {
+				line := scanner.Text()
+
+				if line == "" {
+					continue
+				}
+
 				msg := &sarama.ProducerMessage{
 					Topic: topic,
-					Value: sarama.StringEncoder(scanner.Text()),
+					Value: sarama.StringEncoder(line),
 				}
 				_, _, err := producer.SendMessage(msg)
 				if err != nil {
-					slog.Error("producer.SendMessage failed", err)
+					slog.Error("producer.SendMessage failed", slog.Any("error", err))
 				}
 			}
 
