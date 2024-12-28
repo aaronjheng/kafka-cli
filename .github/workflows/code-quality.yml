@@ -35,3 +35,6 @@ jobs:
 
       - name: Check spelling
         uses: streetsidesoftware/cspell-action@v6
+
+      - name: Lint YAML
+        uses: karancode/yamllint-github-action@master@v3
