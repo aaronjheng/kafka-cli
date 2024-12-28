@@ -15,6 +15,6 @@ jobs:
       - name: Trunk Code Quality
         uses: trunk-io/trunk-action@v1
 
-    #   - name: Ensure go mod tidy
-    #     run: |
-    #       go mod tidy -diff
+      - name: Ensure go mod tidy
+        run: |
+          go mod tidy -diff
