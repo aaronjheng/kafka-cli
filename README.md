@@ -8,7 +8,7 @@ go install github.com/aaronjheng/kafka-cli/cmd/kafka@latest
 
 ## Configuration
 
-See [config.example.yml](contrib/config.example.yml) for reference.
+See [config.example.yaml](contrib/config.example.yaml) for reference.
 
 ## License
 
