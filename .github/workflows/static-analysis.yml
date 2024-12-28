@@ -1,0 +1,29 @@
+name: Static Analysis
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup just
+        uses: extractions/setup-just@v2
+        env:
+          github_token: ${{ github.token }}
+
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ./go.mod
+
+      - name: Setup golangci-lint
+        uses: golangci/golangci-lint-action@v6
+
+      - name: Run lint
+        run: |
+          just lint
