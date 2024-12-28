@@ -22,7 +22,7 @@ func topicCmd() *cobra.Command {
 
 	cmd.AddCommand(topicListCmd())
 	cmd.AddCommand(topicCreateCmd())
-	cmd.AddCommand(topicDeleteCmd)
+	cmd.AddCommand(topicDeleteCmd())
 
 	return cmd
 }
@@ -109,27 +109,31 @@ func topicCreateCmd() *cobra.Command {
 	return cmd
 }
 
-var topicDeleteCmd = &cobra.Command{
-	Use:  "delete",
-	Args: cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		topic := args[0]
+func topicDeleteCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:  "delete",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			topic := args[0]
 
-		clusterAdmin, err := newClusterAdmin()
-		if err != nil {
-			return fmt.Errorf("newClusterAdmin error: %w", err)
-		}
-
-		defer func() {
-			if err := clusterAdmin.Close(); err != nil {
-				slog.Error("clusterAdmin.Close failed", slog.Any("error", err))
+			clusterAdmin, err := newClusterAdmin()
+			if err != nil {
+				return fmt.Errorf("newClusterAdmin error: %w", err)
 			}
-		}()
 
-		if err := clusterAdmin.DeleteTopic(topic); err != nil {
-			return fmt.Errorf("clusterAdmin.DeleteTopic error: %w", err)
-		}
+			defer func() {
+				if err := clusterAdmin.Close(); err != nil {
+					slog.Error("clusterAdmin.Close failed", slog.Any("error", err))
+				}
+			}()
 
-		return nil
-	},
+			if err := clusterAdmin.DeleteTopic(topic); err != nil {
+				return fmt.Errorf("clusterAdmin.DeleteTopic error: %w", err)
+			}
+
+			return nil
+		},
+	}
+
+	return cmd
 }
