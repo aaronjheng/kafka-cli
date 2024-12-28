@@ -6,6 +6,7 @@ on:
 
 jobs:
   static-analysis:
+    name: Static Analysis
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -27,3 +28,7 @@ jobs:
       - name: Run lint
         run: |
           just lint
+
+      - name: Ensure go mod tidy
+        run: |
+          go mod tidy -diff
