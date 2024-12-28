@@ -9,4 +9,5 @@ ignoreWords:
   - olekukonko
   - sarama
   - unconvert
+  - golangci
 import: []
