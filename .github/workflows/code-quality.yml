@@ -37,4 +37,4 @@ jobs:
         uses: streetsidesoftware/cspell-action@v6
 
       - name: Lint YAML
-        uses: karancode/yamllint-github-action@master@v3
+        uses: karancode/yamllint-github-action@v3
