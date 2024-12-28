@@ -10,4 +10,5 @@ ignoreWords:
   - sarama
   - unconvert
   - golangci
+  - karancode
 import: []
