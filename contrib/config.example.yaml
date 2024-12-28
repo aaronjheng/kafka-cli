@@ -2,14 +2,14 @@ default_cluster: dev
 
 clusters:
   dev:
-    brokers: ["127.0.0.1:9092"]
+    brokers: [127.0.0.1:9092]
   test:
     brokers:
-      ["139.196.173.42:9093", "106.14.32.143:9093", "139.196.175.165:9093"]
+      [139.196.173.42:9093, 106.14.32.143:9093, 139.196.175.165:9093]
     tls:
       insecure: true
-      cafile: "/home/aaron/workspace/tools/kafka-test.cert"
+      cafile: /home/aaron/workspace/tools/kafka-test.cert
     sasl:
-      mechanism: "PLAIN"
-      username: "7mz26s0du00c"
-      password: "2JtyjwWOb2Gnhdin"
+      mechanism: PLAIN
+      username: 7mz26s0du00c
+      password: 2JtyjwWOb2Gnhdin
