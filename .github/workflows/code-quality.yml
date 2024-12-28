@@ -5,36 +5,16 @@ on:
       - master
 
 jobs:
-  static-analysis:
-    name: Static Analysis
+  trunk-code-quality:
+    name: Trunk Code Quality
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup just
-        uses: extractions/setup-just@v2
-        env:
-          github_token: ${{ github.token }}
-
-      - name: Setup go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: ./go.mod
-
-      - name: Setup golangci-lint
-        uses: golangci/golangci-lint-action@v6
-
-      - name: Run lint
-        run: |
-          just lint
+      - name: Trunk Code Quality
+        uses: trunk-io/trunk-action@v1
 
       - name: Ensure go mod tidy
         run: |
           go mod tidy -diff
-
-      - name: Check spelling
-        uses: streetsidesoftware/cspell-action@v6
-
-      - name: Lint YAML
-        uses: karancode/yamllint-github-action@master
