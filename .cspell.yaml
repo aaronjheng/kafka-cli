@@ -1,9 +1,8 @@
 version: "0.2"
-ignorePaths: [
-    "go.mod",
-    "go.sum",
-    ".trunk/**"
-]
+ignorePaths:
+  - go.mod
+  - go.sum,
+  - .trunk/**
 dictionaryDefinitions: []
 dictionaries: []
 words: []
@@ -15,4 +14,18 @@ ignoreWords:
   - unconvert
   - golangci
   - karancode
+  - justfile
+  - gomod
+  - errcheck
+  - gosimple
+  - govet
+  - ineffassign
+  - staticcheck
+  - gofumpt
+  - aaronjheng
+  - dotenv
+  - compinit
+  - tablewriter
+  - mapstructure
+  - adrg
 import: []
