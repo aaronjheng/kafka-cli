@@ -23,7 +23,7 @@ lint:
     - prettier
   enabled:
     - cspell@8.17.1
-    - actionlint@1.7.4
+    - actionlint@1.7.5
     - git-diff-check
     - gofmt@1.20.4
     - golangci-lint@1.62.2
