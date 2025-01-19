@@ -28,4 +28,5 @@ ignoreWords:
   - tablewriter
   - mapstructure
   - adrg
+  - localmodule
 import: []
