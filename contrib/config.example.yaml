@@ -1,10 +1,10 @@
-default_cluster: dev
+default_cluster: development
 
 clusters:
-  dev:
+  development:
     brokers:
       - 127.0.0.1:9092
-  test:
+  testing:
     brokers:
       - 139.196.173.42:9093
       - 106.14.32.143:9093
