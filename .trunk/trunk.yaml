@@ -29,10 +29,10 @@ lint:
     - actionlint@1.7.7
     - git-diff-check
     - gofmt@1.20.4
-    - golangci-lint@1.64.7
+    - golangci-lint@1.64.8
     - markdownlint@0.44.0
-    - trufflehog@3.88.17
-    - yamllint@1.36.0
+    - trufflehog@3.88.18
+    - yamllint@1.36.2
 
 actions:
   disabled:
