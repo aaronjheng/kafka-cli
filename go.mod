@@ -9,7 +9,7 @@ require (
 	github.com/adrg/xdg v0.5.3
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	golang.org/x/crypto v0.36.0
 	golang.org/x/net v0.38.0
 )
