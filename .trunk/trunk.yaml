@@ -25,14 +25,14 @@ lint:
     - osv-scanner
     - prettier
   enabled:
-    - cspell@8.17.5
+    - cspell@8.18.0
     - actionlint@1.7.7
     - git-diff-check
     - gofmt@1.20.4
     - golangci-lint@1.64.8
     - markdownlint@0.44.0
-    - trufflehog@3.88.18
-    - yamllint@1.36.2
+    - trufflehog@3.88.20
+    - yamllint@1.37.0
 
 actions:
   disabled:
