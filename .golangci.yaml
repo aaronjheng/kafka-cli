@@ -1,23 +1,40 @@
+version: "2"
 linters:
-  disable-all: true
+  default: none
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - unused
-
-    - gofumpt
-    - gci
     - unconvert
-
-linters-settings:
-  gci:
-    custom-order: true
-    sections:
-      - standard
-      - default
-      - localmodule
-  gofumpt:
-    module-path: github.com/aaronjheng/kafka-cli
+    - unused
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - localmodule
+      custom-order: true
+    gofumpt:
+      module-path: github.com/aaronjheng/kafka-cli
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
