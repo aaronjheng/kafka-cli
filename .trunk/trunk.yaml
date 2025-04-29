@@ -26,13 +26,13 @@ lint:
     - prettier
     - golangci-lint
   enabled:
-    - golangci-lint2@2.1.2
-    - cspell@8.19.2
+    - golangci-lint2@2.1.5
+    - cspell@8.19.3
     - actionlint@1.7.7
     - git-diff-check
     - gofmt@1.20.4
     - markdownlint@0.44.0
-    - trufflehog@3.88.24
+    - trufflehog@3.88.25
     - yamllint@1.37.0
 
 actions:
