@@ -3,7 +3,7 @@ module github.com/aaronjheng/kafka-cli
 go 1.23.0
 
 require (
-	github.com/IBM/sarama v1.45.1
+	github.com/IBM/sarama v1.45.2
 	github.com/adrg/xdg v0.5.3
 	github.com/olekukonko/tablewriter v1.0.6
 	github.com/spf13/cobra v1.9.1
