@@ -48,7 +48,7 @@ func topicListCmd() *cobra.Command {
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"Topic", "Number of Partitions", "Replication Factor"})
+			table.Header([]string{"Topic", "Number of Partitions", "Replication Factor"})
 
 			for k, v := range topics {
 				table.Append([]string{k, fmt.Sprintf("%d", v.NumPartitions), fmt.Sprintf("%d", v.ReplicationFactor)})

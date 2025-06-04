@@ -51,7 +51,7 @@ var groupListCmd = &cobra.Command{
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Consumer Group", "State", "Protocol Type", "Protocol", "Members"})
+		table.Header([]string{"Consumer Group", "State", "Protocol Type", "Protocol", "Members"})
 
 		for _, detail := range details {
 			table.Append([]string{detail.GroupId, detail.State, detail.ProtocolType, detail.Protocol, fmt.Sprintf("%d", len(detail.Members))})
