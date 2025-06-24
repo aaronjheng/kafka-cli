@@ -32,7 +32,7 @@ lint:
     - git-diff-check
     - gofmt@1.20.4
     - markdownlint@0.45.0
-    - trufflehog@3.89.1
+    - trufflehog@3.89.2
     - yamllint@1.37.1
 
 actions:
