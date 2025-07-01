@@ -8,7 +8,7 @@ cli:
 plugins:
   sources:
     - id: trunk
-      ref: v1.7.0
+      ref: v1.7.1
       uri: https://github.com/trunk-io/plugins
 
 # Many linters and tools depend on runtimes - configure them here. (https://docs.trunk.io/runtimes)
@@ -26,7 +26,7 @@ lint:
     - prettier
     - golangci-lint
   enabled:
-    - golangci-lint2@2.1.6
+    - golangci-lint2@2.2.1
     - cspell@9.0.2
     - actionlint@1.7.7
     - git-diff-check
