@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/IBM/sarama v1.45.2
 	github.com/adrg/xdg v0.5.3
-	github.com/olekukonko/tablewriter v1.0.7
+	github.com/olekukonko/tablewriter v1.0.8
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	golang.org/x/crypto v0.39.0
