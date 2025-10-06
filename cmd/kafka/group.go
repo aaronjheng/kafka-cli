@@ -54,10 +54,15 @@ var groupListCmd = &cobra.Command{
 		table.Header([]string{"Consumer Group", "State", "Protocol Type", "Protocol", "Members"})
 
 		for _, detail := range details {
-			table.Append([]string{detail.GroupId, detail.State, detail.ProtocolType, detail.Protocol, fmt.Sprintf("%d", len(detail.Members))})
+			err := table.Append([]string{detail.GroupId, detail.State, detail.ProtocolType, detail.Protocol, fmt.Sprintf("%d", len(detail.Members))})
+			if err != nil {
+				return fmt.Errorf("table.Append error: %w", err)
+			}
 		}
 
-		table.Render()
+		if err := table.Render(); err != nil {
+			return fmt.Errorf("table.Render error: %w", err)
+		}
 
 		return nil
 	},

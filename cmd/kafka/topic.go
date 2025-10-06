@@ -51,10 +51,15 @@ func topicListCmd() *cobra.Command {
 			table.Header([]string{"Topic", "Number of Partitions", "Replication Factor"})
 
 			for k, v := range topics {
-				table.Append([]string{k, fmt.Sprintf("%d", v.NumPartitions), fmt.Sprintf("%d", v.ReplicationFactor)})
+				err := table.Append([]string{k, fmt.Sprintf("%d", v.NumPartitions), fmt.Sprintf("%d", v.ReplicationFactor)})
+				if err != nil {
+					return fmt.Errorf("table.Append error: %w", err)
+				}
 			}
 
-			table.Render()
+			if err := table.Render(); err != nil {
+				return fmt.Errorf("table.Render error: %w", err)
+			}
 
 			return nil
 		},
