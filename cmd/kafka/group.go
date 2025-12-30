@@ -16,6 +16,7 @@ func groupCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(groupListCmd)
+	cmd.AddCommand(groupDeleteCmd())
 
 	return cmd
 }
@@ -66,4 +67,37 @@ var groupListCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func groupDeleteCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "delete",
+		Short: "delete",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clusterAdmin, err := newClusterAdmin()
+			if err != nil {
+				return fmt.Errorf("newClusterAdmin error: %w", err)
+			}
+
+			defer func() {
+				if err := clusterAdmin.Close(); err != nil {
+					slog.Error("clusterAdmin.Close failed", slog.Any("error", err))
+				}
+			}()
+
+			group := args[0]
+			slog.Info("Delete consumer group", slog.String("group", group))
+
+			if err := clusterAdmin.DeleteConsumerGroup(group); err != nil {
+				return fmt.Errorf("clusterAdmin.DeleteConsumerGroup error: %w", err)
+			}
+
+			slog.Info("Consumer group deleted", slog.String("group", group))
+
+			return nil
+		},
+	}
+
+	return cmd
 }
