@@ -4,12 +4,17 @@ import (
 	_ "embed"
 	"fmt"
 	"runtime"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 //go:embed VERSION
 var version string
+
+func init() {
+	version = strings.TrimRight(version, "\n")
+}
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
