@@ -1,9 +1,12 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
+	"slices"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -42,10 +45,9 @@ func groupListCmd() *cobra.Command {
 				return fmt.Errorf("clusterAdmin.ListConsumerGroups error: %w", err)
 			}
 
-			consumerGroups := []string{}
-			for k := range groups {
-				consumerGroups = append(consumerGroups, k)
-			}
+			consumerGroups := slices.SortedStableFunc(maps.Keys(groups), func(a, b string) int {
+				return cmp.Compare(a, b)
+			})
 
 			details, err := clusterAdmin.DescribeConsumerGroups(consumerGroups)
 			if err != nil {
