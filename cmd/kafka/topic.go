@@ -1,9 +1,12 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
+	"slices"
 
 	"github.com/IBM/sarama"
 	"github.com/olekukonko/tablewriter"
@@ -42,16 +45,26 @@ func topicListCmd() *cobra.Command {
 				}
 			}()
 
-			topics, err := clusterAdmin.ListTopics()
+			topicDetails, err := clusterAdmin.ListTopics()
 			if err != nil {
 				return fmt.Errorf("clusterAdmin.ListTopics error: %w", err)
 			}
 
+			topics := slices.SortedStableFunc(maps.Keys(topicDetails), func(a, b string) int {
+				return cmp.Compare(a, b)
+			})
+
 			table := tablewriter.NewWriter(os.Stdout)
 			table.Header([]string{"Topic", "Number of Partitions", "Replication Factor"})
 
-			for k, v := range topics {
-				err := table.Append([]string{k, fmt.Sprintf("%d", v.NumPartitions), fmt.Sprintf("%d", v.ReplicationFactor)})
+			for _, topic := range topics {
+				topicDetail := topicDetails[topic]
+
+				err := table.Append([]string{
+					topic,
+					fmt.Sprintf("%d", topicDetail.NumPartitions),
+					fmt.Sprintf("%d", topicDetail.ReplicationFactor),
+				})
 				if err != nil {
 					return fmt.Errorf("table.Append error: %w", err)
 				}
