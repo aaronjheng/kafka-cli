@@ -8,6 +8,7 @@ import (
 	"os"
 	"slices"
 
+	"github.com/IBM/sarama"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -45,14 +46,14 @@ func groupListCmd() *cobra.Command {
 				return fmt.Errorf("clusterAdmin.ListConsumerGroups error: %w", err)
 			}
 
-			consumerGroups := slices.SortedStableFunc(maps.Keys(groups), func(a, b string) int {
-				return cmp.Compare(a, b)
-			})
-
-			details, err := clusterAdmin.DescribeConsumerGroups(consumerGroups)
+			details, err := clusterAdmin.DescribeConsumerGroups(slices.Collect(maps.Keys(groups)))
 			if err != nil {
 				return fmt.Errorf("clusterAdmin.DescribeConsumerGroups error: %w", err)
 			}
+
+			slices.SortStableFunc(details, func(a, b *sarama.GroupDescription) int {
+				return cmp.Compare(a.GroupId, b.GroupId)
+			})
 
 			table := tablewriter.NewWriter(os.Stdout)
 			table.Header([]string{"Consumer Group", "State", "Protocol Type", "Protocol", "Members"})
