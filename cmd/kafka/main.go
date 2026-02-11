@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/spf13/cobra"
 
+	"github.com/aaronjheng/kafka-cli/internal/admin"
 	"github.com/aaronjheng/kafka-cli/internal/config"
 	"github.com/aaronjheng/kafka-cli/internal/kafka"
 )
@@ -96,4 +98,15 @@ func newConsumer() (sarama.Consumer, error) {
 	}
 
 	return sarama.NewConsumerFromClient(cluster)
+}
+
+func provideAdmin() (*admin.Admin, func(context.Context) error, error) {
+	clusterAdmin, err := newClusterAdmin()
+	if err != nil {
+		return nil, nil, fmt.Errorf("newClusterAdmin error: %w", err)
+	}
+
+	return admin.NewAdmin(clusterAdmin), func(ctx context.Context) error {
+		return clusterAdmin.Close()
+	}, nil
 }
