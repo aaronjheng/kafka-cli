@@ -1,19 +1,11 @@
 package main
 
 import (
-	"cmp"
 	"fmt"
 	"log/slog"
-	"maps"
-	"os"
-	"slices"
 
-	"github.com/IBM/sarama"
-	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
-
-// TODO: kafka-topics --config
 
 func topicCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -34,44 +26,21 @@ func topicListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "list",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clusterAdmin, err := newClusterAdmin()
+			ctx := cmd.Context()
+			admin, closer, err := provideAdmin()
 			if err != nil {
-				return fmt.Errorf("newClusterAdmin error: %w", err)
+				return fmt.Errorf("provideAdmin error: %w", err)
 			}
 
 			defer func() {
-				if err := clusterAdmin.Close(); err != nil {
-					slog.Error("clusterAdmin.Close failed", slog.Any("error", err))
+				if err := closer(ctx); err != nil {
+					slog.Error("closer error", slog.Any("error", err))
+					// Ignore error
 				}
 			}()
 
-			topicDetails, err := clusterAdmin.ListTopics()
-			if err != nil {
-				return fmt.Errorf("clusterAdmin.ListTopics error: %w", err)
-			}
-
-			topics := slices.SortedStableFunc(maps.Keys(topicDetails), func(a, b string) int {
-				return cmp.Compare(a, b)
-			})
-
-			table := tablewriter.NewWriter(os.Stdout)
-			table.Header([]string{"Topic", "Number of Partitions", "Replication Factor"})
-
-			for _, topic := range topics {
-				topicDetail := topicDetails[topic]
-
-				err := table.Append([]string{
-					topic,
-					fmt.Sprintf("%d", topicDetail.NumPartitions),
-					fmt.Sprintf("%d", topicDetail.ReplicationFactor),
-				})
-				if err != nil {
-					return fmt.Errorf("table.Append error: %w", err)
-				}
-			}
-
-			if err := table.Render(); err != nil {
-				return fmt.Errorf("table.Render error: %w", err)
+			if err := admin.ListTopics(); err != nil {
+				return fmt.Errorf("admin.ListTopics error: %w", err)
 			}
 
 			return nil
@@ -86,18 +55,9 @@ func topicCreateCmd() *cobra.Command {
 		Use:  "create",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
 			topic := args[0]
-
-			clusterAdmin, err := newClusterAdmin()
-			if err != nil {
-				return fmt.Errorf("newClusterAdmin error: %w", err)
-			}
-
-			defer func() {
-				if err := clusterAdmin.Close(); err != nil {
-					slog.Error("clusterAdmin.Close failed", slog.Any("error", err))
-				}
-			}()
 
 			numPartitions, err := cmd.Flags().GetInt32("partitions")
 			if err != nil {
@@ -109,12 +69,20 @@ func topicCreateCmd() *cobra.Command {
 				return fmt.Errorf("get replication-factor flag error: %w", err)
 			}
 
-			err = clusterAdmin.CreateTopic(topic, &sarama.TopicDetail{
-				NumPartitions:     numPartitions,
-				ReplicationFactor: replicationFactor,
-			}, false)
+			admin, closer, err := provideAdmin()
 			if err != nil {
-				return fmt.Errorf("clusterAdmin.CreateTopic error: %w", err)
+				return fmt.Errorf("provideAdmin error: %w", err)
+			}
+
+			defer func() {
+				if err := closer(ctx); err != nil {
+					slog.Error("closer error", slog.Any("error", err))
+					// Ignore error
+				}
+			}()
+
+			if err := admin.CreateTopic(topic, numPartitions, replicationFactor); err != nil {
+				return fmt.Errorf("admin.CreateTopic error: %w", err)
 			}
 
 			return nil
@@ -129,24 +97,23 @@ func topicCreateCmd() *cobra.Command {
 
 func topicDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  "delete",
-		Args: cobra.ExactArgs(1),
+		Use: "delete",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			topic := args[0]
-
-			clusterAdmin, err := newClusterAdmin()
+			ctx := cmd.Context()
+			admin, closer, err := provideAdmin()
 			if err != nil {
-				return fmt.Errorf("newClusterAdmin error: %w", err)
+				return fmt.Errorf("provideAdmin error: %w", err)
 			}
 
 			defer func() {
-				if err := clusterAdmin.Close(); err != nil {
-					slog.Error("clusterAdmin.Close failed", slog.Any("error", err))
+				if err := closer(ctx); err != nil {
+					slog.Error("closer error", slog.Any("error", err))
+					// Ignore error
 				}
 			}()
 
-			if err := clusterAdmin.DeleteTopic(topic); err != nil {
-				return fmt.Errorf("clusterAdmin.DeleteTopic error: %w", err)
+			if err := admin.DeleteTopics(args...); err != nil {
+				return fmt.Errorf("admin.DeleteTopics error: %w", err)
 			}
 
 			return nil
