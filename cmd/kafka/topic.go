@@ -89,7 +89,7 @@ func topicCreateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().Int32("partitions", 1, "The number of partitions for the topic")
+	cmd.Flags().Int32("partitions", 3, "The number of partitions for the topic")
 	cmd.Flags().Int16("replication-factor", 1, "The replication factor for each partition in the topic being created.")
 
 	return cmd
