@@ -24,6 +24,7 @@ func configCatCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfgPathname := cfg.Filepath()
 			fmt.Fprintf(os.Stdout, "# %s\n", cfgPathname)
+
 			f, err := os.Open(cfgPathname)
 			if err != nil {
 				return fmt.Errorf("os.Open error: %w", err)
