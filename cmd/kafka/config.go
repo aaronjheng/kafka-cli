@@ -23,7 +23,7 @@ func configCatCmd() *cobra.Command {
 		Use: "cat",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfgPathname := cfg.Filepath()
-			fmt.Printf("# %s\n", cfgPathname)
+			fmt.Fprintf(os.Stdout, "# %s\n", cfgPathname)
 			f, err := os.Open(cfgPathname)
 			if err != nil {
 				return fmt.Errorf("os.Open error: %w", err)
