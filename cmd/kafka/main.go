@@ -47,8 +47,8 @@ func rootCmd() *cobra.Command {
 	cmd.AddCommand(groupCmd())
 	cmd.AddCommand(producerCmd())
 	cmd.AddCommand(consumerCmd())
-	cmd.AddCommand(versionCmd)
-	cmd.AddCommand(completionCmd)
+	cmd.AddCommand(versionCmd())
+	cmd.AddCommand(completionCmd())
 
 	return cmd
 }
