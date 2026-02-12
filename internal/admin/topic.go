@@ -42,6 +42,8 @@ func (a *Admin) ListTopics() error {
 		return fmt.Errorf("table.Render error: %w", err)
 	}
 
+	fmt.Fprintf(os.Stdout, "Total topics: %d\n", len(topics))
+
 	return nil
 }
 
