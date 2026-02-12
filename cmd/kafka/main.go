@@ -71,15 +71,6 @@ func newCluster() (*kafka.Kafka, error) {
 	return kafka.New(cfg)
 }
 
-func newClusterAdmin() (sarama.ClusterAdmin, error) {
-	cluster, err := newCluster()
-	if err != nil {
-		return nil, fmt.Errorf("newCluster error: %w", err)
-	}
-
-	return sarama.NewClusterAdminFromClient(cluster)
-}
-
 func newSyncProducer() (sarama.SyncProducer, error) {
 	cluster, err := newCluster()
 	if err != nil {
@@ -101,7 +92,12 @@ func newConsumer() (sarama.Consumer, error) {
 }
 
 func provideAdmin() (*admin.Admin, func(context.Context) error, error) {
-	clusterAdmin, err := newClusterAdmin()
+	cluster, err := newCluster()
+	if err != nil {
+		return nil, nil, fmt.Errorf("newCluster error: %w", err)
+	}
+
+	clusterAdmin, err := sarama.NewClusterAdminFromClient(cluster)
 	if err != nil {
 		return nil, nil, fmt.Errorf("newClusterAdmin error: %w", err)
 	}
