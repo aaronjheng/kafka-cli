@@ -23,15 +23,15 @@ func (a *Admin) ListTopics() error {
 	})
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.Header([]string{"Topic", "Number of Partitions", "Replication Factor"})
+	table.Header([]any{"Topic", "Number of Partitions", "Replication Factor"})
 
 	for _, topic := range topics {
 		topicDetail := topicDetails[topic]
 
-		err := table.Append([]string{
+		err := table.Append([]any{
 			topic,
-			fmt.Sprintf("%d", topicDetail.NumPartitions),
-			fmt.Sprintf("%d", topicDetail.ReplicationFactor),
+			topicDetail.NumPartitions,
+			topicDetail.ReplicationFactor,
 		})
 		if err != nil {
 			return fmt.Errorf("table.Append error: %w", err)

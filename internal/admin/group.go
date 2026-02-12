@@ -31,7 +31,7 @@ func (a *Admin) ListConsumerGroups() error {
 	table.Header([]string{"Consumer Group", "State", "Protocol Type", "Protocol", "Members"})
 
 	for _, detail := range details {
-		err := table.Append([]string{detail.GroupId, detail.State, detail.ProtocolType, detail.Protocol, fmt.Sprintf("%d", len(detail.Members))})
+		err := table.Append([]any{detail.GroupId, detail.State, detail.ProtocolType, detail.Protocol, len(detail.Members)})
 		if err != nil {
 			return fmt.Errorf("table.Append error: %w", err)
 		}
