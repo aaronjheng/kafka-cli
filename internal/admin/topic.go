@@ -18,9 +18,7 @@ func (a *Admin) ListTopics() error {
 		return fmt.Errorf("clusterAdmin.ListTopics error: %w", err)
 	}
 
-	topics := slices.SortedStableFunc(maps.Keys(topicDetails), func(a, b string) int {
-		return cmp.Compare(a, b)
-	})
+	topics := slices.SortedStableFunc(maps.Keys(topicDetails), cmp.Compare)
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.Header([]any{"Topic", "Number of Partitions", "Replication Factor"})
@@ -38,7 +36,8 @@ func (a *Admin) ListTopics() error {
 		}
 	}
 
-	if err := table.Render(); err != nil {
+	err = table.Render()
+	if err != nil {
 		return fmt.Errorf("table.Render error: %w", err)
 	}
 
@@ -63,11 +62,13 @@ func (a *Admin) DeleteTopics(topics ...string) error {
 	for _, topic := range topics {
 		slog.Info("Delete topic", slog.String("topic", topic))
 
-		if err := a.clusterAdmin.DeleteTopic(topic); err != nil {
+		err := a.clusterAdmin.DeleteTopic(topic)
+		if err != nil {
 			return fmt.Errorf("clusterAdmin.DeleteTopic error: %w", err)
 		}
 
 		slog.Info("Topic deleted", slog.String("topic", topic))
 	}
+
 	return nil
 }

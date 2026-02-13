@@ -6,8 +6,115 @@ linters:
     - govet
     - ineffassign
     - staticcheck
-    - unconvert
     - unused
+
+    - gocritic
+    - gocheckcompilerdirectives
+    - gochecknoinits
+    - gochecknoglobals
+    - gochecksumtype
+    - asasalint
+    - arangolint
+    - godot
+    - godoclint
+    - godox
+    - goheader
+    # - gocognit
+    - gocyclo
+    - asciicheck
+    - bidichk
+    - copyloopvar
+    - canonicalheader
+    # - depguard
+    - decorder
+    # - cyclop
+    - bodyclose
+    - contextcheck
+    - containedctx
+    - errorlint
+    - durationcheck
+    - dogsled
+    - dupl
+    - exptostd
+    - exhaustive
+    # - exhaustruct
+    - fatcontext
+    # - funlen
+    - dupword
+    - embeddedstructfieldcheck
+    - err113
+    - errchkjson
+    - errname
+    - gosec
+    - forbidigo
+    - forcetypeassert
+    - funcorder
+    - goconst
+    - gomoddirectives
+    - gomodguard
+    - gosmopolitan
+    - goprintffuncname
+    - ginkgolinter
+    - grouper
+    - iface
+    - importas
+    # - ireturn
+    - inamedparam
+    - interfacebloat
+    - misspell
+    - makezero
+    - maintidx
+    - loggercheck
+    - lll
+    # - varnamelen
+    - mirror
+    - modernize
+    - musttag
+    - mnd
+    - intrange
+    - iotamixing
+    - nakedret
+    - nilnil
+    - nilerr
+    - nilnesserr
+    - noctx
+    - noinlineerr
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
+    - nestif
+    - nlreturn
+    - predeclared
+    - prealloc
+    - perfsprint
+    - promlinter
+    - protogetter
+    - rowserrcheck
+    - recvcheck
+    - reassign
+    - spancheck
+    - sloglint
+    - sqlclosecheck
+    - revive
+    - tagalign
+    - tagliatelle
+    - testifylint
+    - thelper
+    - testableexamples
+    - testpackage
+    - paralleltest
+    - tparallel
+    - whitespace
+    - wsl_v5
+    # - wsl
+    - wastedassign
+    - unparam
+    - unconvert
+    - unqueryvet
+    - usestdlibvars
+    - usetesting
+    - zerologlint
+    - wrapcheck
   exclusions:
     generated: lax
     presets:

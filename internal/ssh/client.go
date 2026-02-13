@@ -22,15 +22,6 @@ type Client struct {
 	*ssh.Client
 }
 
-func (c *Client) Dial(ctx context.Context, protocol, address string) (net.Conn, error) {
-	return c.Client.DialContext(ctx, protocol, address)
-}
-
-// Deprecated: Use Dial instead.
-func (c *Client) DialContext(ctx context.Context, protocol, address string) (net.Conn, error) {
-	return c.Dial(ctx, protocol, address)
-}
-
 func NewClient(cfg *Config) (*Client, error) {
 	identityFiles := []string{
 		"~/.ssh/id_ed25519",
@@ -39,7 +30,7 @@ func NewClient(cfg *Config) (*Client, error) {
 		"~/.ssh/id_rsa",
 	}
 
-	if cfg.IdentityFile == "" {
+	if cfg.IdentityFile != "" {
 		identityFiles = append([]string{cfg.IdentityFile}, identityFiles...)
 	}
 
@@ -49,7 +40,8 @@ func NewClient(cfg *Config) (*Client, error) {
 	}
 
 	sshCfg := &ssh.ClientConfig{
-		User:            cfg.Username,
+		User: cfg.Username,
+		// #nosec G106 -- compatibility mode: allow connecting to hosts not present in known_hosts.
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signers...),
@@ -66,6 +58,20 @@ func NewClient(cfg *Config) (*Client, error) {
 	}
 
 	return client, nil
+}
+
+func (c *Client) Dial(ctx context.Context, protocol, address string) (net.Conn, error) {
+	conn, err := c.Client.DialContext(ctx, protocol, address)
+	if err != nil {
+		return nil, fmt.Errorf("ssh.Client.DialContext error: %w", err)
+	}
+
+	return conn, nil
+}
+
+// Deprecated: Use Dial instead.
+func (c *Client) DialContext(ctx context.Context, protocol, address string) (net.Conn, error) {
+	return c.Dial(ctx, protocol, address)
 }
 
 func sshSignersFromIdentityFiles(identityFiles []string) ([]ssh.Signer, error) {
@@ -85,9 +91,9 @@ func sshSignersFromIdentityFiles(identityFiles []string) ([]ssh.Signer, error) {
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue
-			} else {
-				return nil, fmt.Errorf("os.Stat error: %w", err)
 			}
+
+			return nil, fmt.Errorf("os.Stat error: %w", err)
 		}
 
 		raw, err := os.ReadFile(f)

@@ -21,7 +21,7 @@ func configCmd() *cobra.Command {
 func configCatCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "cat",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			cfgPathname := cfg.Filepath()
 			fmt.Fprintf(os.Stdout, "# %s\n", cfgPathname)
 
@@ -31,7 +31,8 @@ func configCatCmd() *cobra.Command {
 			}
 			defer f.Close()
 
-			if _, err := io.Copy(os.Stdout, f); err != nil {
+			_, err = io.Copy(os.Stdout, f)
+			if err != nil {
 				return fmt.Errorf("io.Copy error: %w", err)
 			}
 

@@ -7,11 +7,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const defaultTopicPartitions int32 = 3
+
 func topicCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "topic",
 		Short: "topic",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 		},
 	}
 
@@ -25,21 +27,24 @@ func topicCmd() *cobra.Command {
 func topicListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "list",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
+
 			admin, closer, err := provideAdmin()
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}
 
 			defer func() {
-				if err := closer(ctx); err != nil {
+				err := closer(ctx)
+				if err != nil {
 					slog.Error("closer error", slog.Any("error", err))
 					// Ignore error
 				}
 			}()
 
-			if err := admin.ListTopics(); err != nil {
+			err = admin.ListTopics()
+			if err != nil {
 				return fmt.Errorf("admin.ListTopics error: %w", err)
 			}
 
@@ -75,13 +80,15 @@ func topicCreateCmd() *cobra.Command {
 			}
 
 			defer func() {
-				if err := closer(ctx); err != nil {
+				err := closer(ctx)
+				if err != nil {
 					slog.Error("closer error", slog.Any("error", err))
 					// Ignore error
 				}
 			}()
 
-			if err := admin.CreateTopic(topic, numPartitions, replicationFactor); err != nil {
+			err = admin.CreateTopic(topic, numPartitions, replicationFactor)
+			if err != nil {
 				return fmt.Errorf("admin.CreateTopic error: %w", err)
 			}
 
@@ -89,7 +96,7 @@ func topicCreateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().Int32("partitions", 3, "The number of partitions for the topic")
+	cmd.Flags().Int32("partitions", defaultTopicPartitions, "The number of partitions for the topic")
 	cmd.Flags().Int16("replication-factor", 1, "The replication factor for each partition in the topic being created.")
 
 	return cmd
@@ -100,19 +107,22 @@ func topicDeleteCmd() *cobra.Command {
 		Use: "delete",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
 			admin, closer, err := provideAdmin()
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}
 
 			defer func() {
-				if err := closer(ctx); err != nil {
+				err := closer(ctx)
+				if err != nil {
 					slog.Error("closer error", slog.Any("error", err))
 					// Ignore error
 				}
 			}()
 
-			if err := admin.DeleteTopics(args...); err != nil {
+			err = admin.DeleteTopics(args...)
+			if err != nil {
 				return fmt.Errorf("admin.DeleteTopics error: %w", err)
 			}
 

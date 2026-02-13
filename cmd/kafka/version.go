@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 
@@ -10,18 +11,16 @@ import (
 )
 
 //go:embed VERSION
-var version string
+var embeddedVersion string
 
-func init() {
-	version = strings.TrimRight(version, "\n")
-}
+var version = strings.TrimRight(embeddedVersion, "\n")
 
 func versionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "version",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("%s (%s %s/%s)\n", version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+		Run: func(_ *cobra.Command, _ []string) {
+			_, _ = fmt.Fprintf(os.Stdout, "%s (%s %s/%s)\n", version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 		},
 	}
 

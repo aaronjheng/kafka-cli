@@ -1,19 +1,32 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"io"
 	"log/slog"
+	"os"
 	"sync"
 
-	"github.com/IBM/sarama"
+	kafkago "github.com/segmentio/kafka-go"
 	"github.com/spf13/cobra"
+
+	"github.com/aaronjheng/kafka-cli/internal/kafka"
 )
+
+const consumerMessageChannelBufferSize = 10
+
+type consumerMessage struct {
+	partition int
+	value     string
+}
 
 func consumerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "consumer",
 		Short: "consumer",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 		},
 	}
 
@@ -25,17 +38,11 @@ func consumerCmd() *cobra.Command {
 func consumerConsoleCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "console",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			consumer, err := newConsumer()
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			clusterCfg, err := clusterConfig()
 			if err != nil {
-				return fmt.Errorf("newConsumer error: %w", err)
+				return fmt.Errorf("clusterConfig error: %w", err)
 			}
-
-			defer func() {
-				if err := consumer.Close(); err != nil {
-					slog.Error("consumer.Close failed", slog.Any("error", err))
-				}
-			}()
 
 			topic, err := cmd.Flags().GetString("topic")
 			if err != nil {
@@ -47,46 +54,89 @@ func consumerConsoleCmd() *cobra.Command {
 				return fmt.Errorf("get partition flag error: %w", err)
 			}
 
-			// Partition flag not specified
+			dialer, err := kafka.NewDialer(clusterCfg)
+			if err != nil {
+				return fmt.Errorf("kafka.NewDialer error: %w", err)
+			}
+
+			// Partition flag not specified.
 			var partitions []int32
+
 			if partition == -1 {
-				var err error
-				partitions, err = consumer.Partitions(topic)
+				partitions, err = kafka.ListTopicPartitions(cmd.Context(), clusterCfg.Brokers, dialer, topic)
 				if err != nil {
-					return fmt.Errorf("consumer.Partitions error: %w", err)
+					return fmt.Errorf("kafka.ListTopicPartitions error: %w", err)
 				}
 			} else {
 				partitions = []int32{partition}
 			}
 
+			partitionWidth := 1
+			for _, partition := range partitions {
+				width := len(fmt.Sprintf("%d", partition))
+				if width > partitionWidth {
+					partitionWidth = width
+				}
+			}
+
 			var wg sync.WaitGroup
 
-			msgCh := make(chan string, 10)
+			msgCh := make(chan consumerMessage, consumerMessageChannelBufferSize)
 
 			for _, partition := range partitions {
-				wg.Add(1)
-				go func(partition int32) {
-					defer wg.Done()
-
-					partitionConsumer, err := consumer.ConsumePartition(topic, partition, sarama.OffsetNewest)
+				wg.Go(func() {
+					reader, err := kafka.NewPartitionReader(clusterCfg.Brokers, dialer, topic, partition)
 					if err != nil {
-						slog.Error("consumer.ConsumePartition failed", slog.Any("error", err))
+						slog.Error("kafka.NewPartitionReader failed", slog.Any("error", err))
+
 						return
 					}
 
-					for msg := range partitionConsumer.Messages() {
-						msgCh <- string(msg.Value)
+					defer func() {
+						err := reader.Close()
+						if err != nil {
+							slog.Error("reader.Close failed", slog.Any("error", err))
+						}
+					}()
+
+					err = reader.SetOffset(kafkago.LastOffset)
+					if err != nil {
+						slog.Error("reader.SetOffset failed", slog.Any("error", err))
+
+						return
 					}
-				}(partition)
+
+					for {
+						msg, err := reader.ReadMessage(cmd.Context())
+						if err != nil {
+							if errors.Is(err, context.Canceled) || errors.Is(err, io.EOF) {
+								return
+							}
+
+							slog.Error("reader.ReadMessage failed", slog.Any("error", err))
+
+							return
+						}
+
+						msgCh <- consumerMessage{
+							partition: msg.Partition,
+							value:     string(msg.Value),
+						}
+					}
+				})
 			}
 
 			go func() {
-				for msg := range msgCh {
-					fmt.Println(msg)
-				}
+				wg.Wait()
+				close(msgCh)
 			}()
 
-			wg.Wait()
+			for msg := range msgCh {
+				_, err := fmt.Fprintf(os.Stdout, "[%0*d] %s\n", partitionWidth, msg.partition, msg.value)
+				if err != nil {
+					slog.Error("fmt.Fprintf failed", slog.Any("error", err))
+				}
+			}
 
 			return nil
 		},

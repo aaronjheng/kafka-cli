@@ -37,7 +37,8 @@ func (a *Admin) ListConsumerGroups() error {
 		}
 	}
 
-	if err := table.Render(); err != nil {
+	err = table.Render()
+	if err != nil {
 		return fmt.Errorf("table.Render error: %w", err)
 	}
 
@@ -48,7 +49,8 @@ func (a *Admin) DeleteConsumerGroups(groups ...string) error {
 	for _, group := range groups {
 		slog.Info("Delete consumer group", slog.String("group", group))
 
-		if err := a.clusterAdmin.DeleteConsumerGroup(group); err != nil {
+		err := a.clusterAdmin.DeleteConsumerGroup(group)
+		if err != nil {
 			return fmt.Errorf("clusterAdmin.DeleteConsumerGroup error: %w", err)
 		}
 

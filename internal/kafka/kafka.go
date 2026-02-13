@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/IBM/sarama"
+	kafkago "github.com/segmentio/kafka-go"
 
 	"github.com/aaronjheng/kafka-cli/internal/ssh"
 )
@@ -24,10 +25,12 @@ func New(c *Config) (*Kafka, error) {
 		if err != nil {
 			return nil, fmt.Errorf("os.ReadFile error: %w", err)
 		}
+
 		certPool := x509.NewCertPool()
 		certPool.AppendCertsFromPEM(raw)
 		cfg.Net.TLS.Config = &tls.Config{
-			RootCAs:            certPool,
+			RootCAs: certPool,
+			// #nosec G402 -- user-controlled option for self-signed/dev clusters.
 			InsecureSkipVerify: c.TLS.Insecure,
 		}
 	}
@@ -58,4 +61,31 @@ func New(c *Config) (*Kafka, error) {
 	return &Kafka{
 		Client: client,
 	}, nil
+}
+
+func NewWriter(cfg *Config, topic string) (*kafkago.Writer, error) {
+	dialer, err := NewDialer(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("NewDialer error: %w", err)
+	}
+
+	return kafkago.NewWriter(kafkago.WriterConfig{
+		Brokers: cfg.Brokers,
+		Topic:   topic,
+		Dialer:  dialer,
+	}), nil
+}
+
+func NewPartitionReader(
+	brokers []string,
+	dialer *kafkago.Dialer,
+	topic string,
+	partition int32,
+) (*kafkago.Reader, error) {
+	return kafkago.NewReader(kafkago.ReaderConfig{
+		Brokers:   brokers,
+		Topic:     topic,
+		Partition: int(partition),
+		Dialer:    dialer,
+	}), nil
 }

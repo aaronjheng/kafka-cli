@@ -1,10 +1,13 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/aaronjheng/kafka-cli/internal/kafka"
 )
+
+var errClusterProfileNotFound = errors.New("cluster profile not found")
 
 type Config struct {
 	filepath       string
@@ -23,7 +26,7 @@ func (c *Config) Cluster(profile string) (*kafka.Config, error) {
 
 	cfg, ok := c.Clusters[profile]
 	if !ok {
-		return nil, fmt.Errorf("no profile specified: %s", profile)
+		return nil, fmt.Errorf("%w: %s", errClusterProfileNotFound, profile)
 	}
 
 	return cfg, nil

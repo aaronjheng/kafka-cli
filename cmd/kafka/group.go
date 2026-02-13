@@ -23,21 +23,24 @@ func groupListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "list",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
+
 			admin, closer, err := provideAdmin()
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}
 
 			defer func() {
-				if err := closer(ctx); err != nil {
+				err := closer(ctx)
+				if err != nil {
 					slog.Error("closer error", slog.Any("error", err))
 					// Ignore error
 				}
 			}()
 
-			if err := admin.ListConsumerGroups(); err != nil {
+			err = admin.ListConsumerGroups()
+			if err != nil {
 				return fmt.Errorf("admin.ListConsumerGroups error: %w", err)
 			}
 
@@ -54,19 +57,22 @@ func groupDeleteCmd() *cobra.Command {
 		Short: "delete",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
 			admin, closer, err := provideAdmin()
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}
 
 			defer func() {
-				if err := closer(ctx); err != nil {
+				err := closer(ctx)
+				if err != nil {
 					slog.Error("closer error", slog.Any("error", err))
 					// Ignore error
 				}
 			}()
 
-			if err := admin.DeleteConsumerGroups(args...); err != nil {
+			err = admin.DeleteConsumerGroups(args...)
+			if err != nil {
 				return fmt.Errorf("admin.DeleteConsumerGroups error: %w", err)
 			}
 

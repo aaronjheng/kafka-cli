@@ -12,6 +12,9 @@ import (
 	"github.com/aaronjheng/kafka-cli/internal/kafka"
 )
 
+const configDirPermission = 0o755
+
+//nolint:gochecknoglobals // Shared immutable fallback config.
 var defaultConfig = &Config{
 	DefaultCluster: "default",
 	Clusters: map[string]*kafka.Config{
@@ -23,8 +26,11 @@ var defaultConfig = &Config{
 
 func LoadConfig(cfgFilepath string) (*Config, error) {
 	cfgRoot := path.Join(xdg.ConfigHome, "kafka")
-	if _, err := os.Stat(cfgRoot); os.IsNotExist(err) {
-		if err := os.Mkdir(cfgRoot, 0o755); err != nil {
+
+	_, err := os.Stat(cfgRoot)
+	if os.IsNotExist(err) {
+		err = os.Mkdir(cfgRoot, configDirPermission)
+		if err != nil {
 			return nil, fmt.Errorf("os.Mkdir error: %w", err)
 		}
 	}
@@ -38,19 +44,22 @@ func LoadConfig(cfgFilepath string) (*Config, error) {
 		viper.AddConfigPath(cfgRoot)
 	}
 
-	if err := viper.ReadInConfig(); err != nil {
+	err = viper.ReadInConfig()
+	if err != nil {
 		var errNotFound viper.ConfigFileNotFoundError
 		if cfgFilepath == "" && errors.As(err, &errNotFound) {
 			return defaultConfig, nil
-		} else {
-			return nil, fmt.Errorf("viper.ReadInConfig error: %w", err)
 		}
+
+		return nil, fmt.Errorf("viper.ReadInConfig error: %w", err)
 	}
 
 	cfg := &Config{
 		filepath: viper.GetViper().ConfigFileUsed(),
 	}
-	if err := viper.Unmarshal(cfg); err != nil {
+
+	err = viper.Unmarshal(cfg)
+	if err != nil {
 		return nil, fmt.Errorf("viper.Unmarshal error: %w", err)
 	}
 
