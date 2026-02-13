@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"strconv"
 	"sync"
 
 	kafkago "github.com/segmentio/kafka-go"
@@ -72,8 +73,9 @@ func consumerConsoleCmd() *cobra.Command {
 			}
 
 			partitionWidth := 1
+
 			for _, partition := range partitions {
-				width := len(fmt.Sprintf("%d", partition))
+				width := len(strconv.Itoa(int(partition)))
 				if width > partitionWidth {
 					partitionWidth = width
 				}
