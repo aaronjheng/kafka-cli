@@ -82,12 +82,12 @@ func sshSignersFromIdentityFiles(identityFiles []string) ([]ssh.Signer, error) {
 		return nil, fmt.Errorf("os.UserHomeDir error: %w", err)
 	}
 
-	for _, f := range identityFiles {
-		if homeDir != "" && strings.HasPrefix(f, "~/") {
-			f = filepath.Join(homeDir, f[2:])
+	for _, identityFile := range identityFiles {
+		if homeDir != "" && strings.HasPrefix(identityFile, "~/") {
+			identityFile = filepath.Join(homeDir, identityFile[2:])
 		}
 
-		_, err := os.Stat(f)
+		_, err := os.Stat(identityFile)
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue
@@ -96,7 +96,7 @@ func sshSignersFromIdentityFiles(identityFiles []string) ([]ssh.Signer, error) {
 			return nil, fmt.Errorf("os.Stat error: %w", err)
 		}
 
-		raw, err := os.ReadFile(f)
+		raw, err := os.ReadFile(identityFile)
 		if err != nil {
 			return nil, fmt.Errorf("os.ReadFile error: %w", err)
 		}

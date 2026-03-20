@@ -108,7 +108,7 @@ linters:
     - unqueryvet
     - usestdlibvars
     - usetesting
-    # - varnamelen
+    - varnamelen
     - wastedassign
     - whitespace
     - wrapcheck

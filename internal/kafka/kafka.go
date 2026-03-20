@@ -16,44 +16,44 @@ type Kafka struct {
 	sarama.Client
 }
 
-func New(c *Config) (*Kafka, error) {
-	cfg := sarama.NewConfig()
-	if c.TLS != nil {
-		cfg.Net.TLS.Enable = true
+func New(clusterConfig *Config) (*Kafka, error) {
+	saramaCfg := sarama.NewConfig()
+	if clusterConfig.TLS != nil {
+		saramaCfg.Net.TLS.Enable = true
 
-		raw, err := os.ReadFile(c.TLS.CAFile)
+		raw, err := os.ReadFile(clusterConfig.TLS.CAFile)
 		if err != nil {
 			return nil, fmt.Errorf("os.ReadFile error: %w", err)
 		}
 
 		certPool := x509.NewCertPool()
 		certPool.AppendCertsFromPEM(raw)
-		cfg.Net.TLS.Config = &tls.Config{
+		saramaCfg.Net.TLS.Config = &tls.Config{
 			RootCAs: certPool,
 			// #nosec G402 -- user-controlled option for self-signed/dev clusters.
-			InsecureSkipVerify: c.TLS.Insecure,
+			InsecureSkipVerify: clusterConfig.TLS.Insecure,
 		}
 	}
 
-	if c.SASL != nil {
-		cfg.Net.SASL.Enable = true
-		cfg.Net.SASL.Mechanism = sarama.SASLMechanism(c.SASL.Mechanism)
-		cfg.Net.SASL.User = c.SASL.Username
-		cfg.Net.SASL.Password = c.SASL.Password
+	if clusterConfig.SASL != nil {
+		saramaCfg.Net.SASL.Enable = true
+		saramaCfg.Net.SASL.Mechanism = sarama.SASLMechanism(clusterConfig.SASL.Mechanism)
+		saramaCfg.Net.SASL.User = clusterConfig.SASL.Username
+		saramaCfg.Net.SASL.Password = clusterConfig.SASL.Password
 	}
 
-	if c.SSH != nil {
-		dialer, err := ssh.NewProxyDialer(c.SSH)
+	if clusterConfig.SSH != nil {
+		dialer, err := ssh.NewProxyDialer(clusterConfig.SSH)
 		if err != nil {
 			return nil, fmt.Errorf("newSSHDialFunc error: %w", err)
 		}
 
-		cfg.Net.Proxy.Enable = true
-		cfg.Net.Proxy.Dialer = dialer
-		cfg.Net.DialTimeout = 0
+		saramaCfg.Net.Proxy.Enable = true
+		saramaCfg.Net.Proxy.Dialer = dialer
+		saramaCfg.Net.DialTimeout = 0
 	}
 
-	client, err := sarama.NewClient(c.Brokers, cfg)
+	client, err := sarama.NewClient(clusterConfig.Brokers, saramaCfg)
 	if err != nil {
 		return nil, fmt.Errorf("sarama.NewClient error: %w", err)
 	}

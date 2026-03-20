@@ -25,13 +25,13 @@ func configCatCmd() *cobra.Command {
 			cfgPathname := cfg.Filepath()
 			fmt.Fprintf(os.Stdout, "# %s\n", cfgPathname)
 
-			f, err := os.Open(cfgPathname)
+			configFile, err := os.Open(cfgPathname)
 			if err != nil {
 				return fmt.Errorf("os.Open error: %w", err)
 			}
-			defer f.Close()
+			defer configFile.Close()
 
-			_, err = io.Copy(os.Stdout, f)
+			_, err = io.Copy(os.Stdout, configFile)
 			if err != nil {
 				return fmt.Errorf("io.Copy error: %w", err)
 			}

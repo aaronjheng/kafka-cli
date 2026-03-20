@@ -81,12 +81,12 @@ func consumerConsoleCmd() *cobra.Command {
 				}
 			}
 
-			var wg sync.WaitGroup
+			var waitGroup sync.WaitGroup
 
 			msgCh := make(chan consumerMessage, consumerMessageChannelBufferSize)
 
 			for _, partition := range partitions {
-				wg.Go(func() {
+				waitGroup.Go(func() {
 					reader, err := kafka.NewPartitionReader(clusterCfg.Brokers, dialer, topic, partition)
 					if err != nil {
 						slog.Error("kafka.NewPartitionReader failed", slog.Any("error", err))
@@ -129,7 +129,7 @@ func consumerConsoleCmd() *cobra.Command {
 			}
 
 			go func() {
-				wg.Wait()
+				waitGroup.Wait()
 				close(msgCh)
 			}()
 
