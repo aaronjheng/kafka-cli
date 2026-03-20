@@ -53,7 +53,7 @@ linters:
     - gomoddirectives
     - gomodguard
     - goprintffuncname
-    # - gosec
+    - gosec
     - gosmopolitan
     - grouper
     - iface
