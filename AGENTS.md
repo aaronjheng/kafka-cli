@@ -31,3 +31,8 @@ just bump-deps
 - All lint errors must be fixed before committing
 - Use `slog` for logging, not `fmt.Print`
 - Wrap errors with `fmt.Errorf("...: %w", err)`
+
+## Code Quality
+
+- 不启用 `ireturn` linter，返回接口在项目中很常见
+- 不启用 deprecated 的 linter`
