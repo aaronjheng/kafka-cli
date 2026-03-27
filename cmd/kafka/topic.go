@@ -20,6 +20,7 @@ func topicCmd() *cobra.Command {
 	cmd.AddCommand(topicListCmd())
 	cmd.AddCommand(topicCreateCmd())
 	cmd.AddCommand(topicDeleteCmd())
+	cmd.AddCommand(topicDescribeCmd())
 
 	return cmd
 }
@@ -124,6 +125,38 @@ func topicDeleteCmd() *cobra.Command {
 			err = admin.DeleteTopics(args...)
 			if err != nil {
 				return fmt.Errorf("admin.DeleteTopics error: %w", err)
+			}
+
+			return nil
+		},
+	}
+
+	return cmd
+}
+
+func topicDescribeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "describe TOPIC",
+		Short: "Show details of a topic",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
+			admin, closer, err := provideAdmin()
+			if err != nil {
+				return fmt.Errorf("provideAdmin error: %w", err)
+			}
+
+			defer func() {
+				err := closer(ctx)
+				if err != nil {
+					slog.Error("closer error", slog.Any("error", err))
+				}
+			}()
+
+			err = admin.DescribeTopic(args[0])
+			if err != nil {
+				return fmt.Errorf("admin.DescribeTopic error: %w", err)
 			}
 
 			return nil
