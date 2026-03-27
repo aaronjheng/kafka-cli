@@ -72,6 +72,7 @@ func newTLSConfig(cfg *TLS) (*tls.Config, error) {
 	}, nil
 }
 
+//nolint:ireturn // Return interface is required by the sasl package.
 func newSASLMechanism(cfg *SASL) (sasl.Mechanism, error) {
 	switch strings.ToUpper(cfg.Mechanism) {
 	case "PLAIN":

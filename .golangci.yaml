@@ -17,9 +17,8 @@ linters:
     - containedctx
     - contextcheck
     - copyloopvar
-    # - cyclop
+    - cyclop
     - decorder
-    # - depguard
     - dogsled
     - dupl
     - dupword
@@ -30,19 +29,19 @@ linters:
     - errname
     - errorlint
     - exhaustive
-    # - exhaustruct
+    - exhaustruct
     - exptostd
     - fatcontext
     - forbidigo
     - forcetypeassert
     - funcorder
-    # - funlen
+    - funlen
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecknoglobals
     - gochecknoinits
     - gochecksumtype
-    # - gocognit
+    - gocognit
     - goconst
     - gocritic
     - gocyclo
@@ -62,7 +61,7 @@ linters:
     - interfacebloat
     - intrange
     - iotamixing
-    # - ireturn
+    - ireturn
     - lll
     - loggercheck
     - maintidx
@@ -114,6 +113,10 @@ linters:
     - wrapcheck
     - wsl_v5
     - zerologlint
+  settings:
+    exhaustruct:
+      include:
+        - 'github\.com/aaronjheng/kafka-cli/.+'
   exclusions:
     generated: lax
     presets:

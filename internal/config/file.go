@@ -16,6 +16,7 @@ const configDirPermission = 0o755
 
 //nolint:gochecknoglobals // Shared immutable fallback config.
 var defaultConfig = &Config{
+	filepath:       "",
 	DefaultCluster: "default",
 	Clusters: map[string]*kafka.Config{
 		"default": {
@@ -55,7 +56,9 @@ func LoadConfig(cfgFilepath string) (*Config, error) {
 	}
 
 	cfg := &Config{
-		filepath: viper.GetViper().ConfigFileUsed(),
+		filepath:       viper.GetViper().ConfigFileUsed(),
+		DefaultCluster: "",
+		Clusters:       nil,
 	}
 
 	err = viper.Unmarshal(cfg)
