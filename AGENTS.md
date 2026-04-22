@@ -34,5 +34,5 @@ just bump-deps
 
 ## Code Quality
 
-- 不启用 `ireturn` linter，返回接口在项目中很常见
-- 不启用 deprecated 的 linter`
+- Do not enable the `ireturn` linter; returning interfaces is common in this project.
+- Do not enable deprecated linters.
