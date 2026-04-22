@@ -50,7 +50,6 @@ func New(clusterConfig *Config) (*Kafka, error) {
 
 		saramaCfg.Net.Proxy.Enable = true
 		saramaCfg.Net.Proxy.Dialer = dialer
-		saramaCfg.Net.DialTimeout = 0
 	}
 
 	client, err := sarama.NewClient(clusterConfig.Brokers, saramaCfg)

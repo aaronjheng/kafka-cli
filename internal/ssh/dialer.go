@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 )
 
 type DialerFunc func(ctx context.Context, network, addr string) (net.Conn, error)
@@ -19,7 +20,12 @@ func newDialerFunc(cfg *Config) (DialerFunc, error) {
 	}
 
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
-		return sshClient.Dial(ctx, network, addr)
+		conn, err := sshClient.Dial(ctx, network, addr)
+		if err != nil {
+			return nil, err
+		}
+
+		return &deadlineConn{Conn: conn}, nil
 	}, nil
 }
 
@@ -30,3 +36,14 @@ func (d DialerFunc) Dial(network, addr string) (net.Conn, error) {
 func (d DialerFunc) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
 	return d(ctx, network, addr)
 }
+
+// deadlineConn wraps a net.Conn and silently ignores deadline errors.
+// x/crypto/ssh channels do not support deadlines and return
+// "ssh: tcpChan: deadline not supported", which causes sarama to fail.
+type deadlineConn struct {
+	net.Conn
+}
+
+func (c *deadlineConn) SetDeadline(_ time.Time) error      { return nil }
+func (c *deadlineConn) SetReadDeadline(_ time.Time) error  { return nil }
+func (c *deadlineConn) SetWriteDeadline(_ time.Time) error { return nil }
