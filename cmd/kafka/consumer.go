@@ -55,9 +55,14 @@ func consumerConsoleCmd() *cobra.Command {
 				return fmt.Errorf("get partition flag error: %w", err)
 			}
 
-			partitions, err := resolvePartitions(cmd.Context(), clusterCfg, topic, partition)
-			if err != nil {
-				return err
+			var partitions []int32
+			if partition == -1 {
+				partitions, err = kafka.ListTopicPartitions(cmd.Context(), clusterCfg, topic)
+				if err != nil {
+					return fmt.Errorf("kafka.ListTopicPartitions error: %w", err)
+				}
+			} else {
+				partitions = []int32{partition}
 			}
 
 			partitionWidth := calculatePartitionWidth(partitions)
@@ -73,24 +78,6 @@ func consumerConsoleCmd() *cobra.Command {
 	cmd.Flags().Int32P("partition", "p", -1, "The partition to consume from.")
 
 	return cmd
-}
-
-func resolvePartitions(
-	ctx context.Context,
-	clusterCfg *kafka.Config,
-	topic string,
-	partition int32,
-) ([]int32, error) {
-	if partition == -1 {
-		partitions, err := kafka.ListTopicPartitions(ctx, clusterCfg, topic)
-		if err != nil {
-			return nil, fmt.Errorf("kafka.ListTopicPartitions error: %w", err)
-		}
-
-		return partitions, nil
-	}
-
-	return []int32{partition}, nil
 }
 
 func calculatePartitionWidth(partitions []int32) int {

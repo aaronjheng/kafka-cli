@@ -4,73 +4,49 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
-	"math"
 	"slices"
 
 	kafkago "github.com/segmentio/kafka-go"
 )
 
-var (
-	errEmptyBrokers               = errors.New("brokers is empty")
-	errTopicHasNoPartitions       = errors.New("topic has no partitions")
-	errPartitionIDOutOfInt32Range = errors.New("partition id out of int32 range")
-)
+var errTopicHasNoPartitions = errors.New("topic has no partitions")
 
 func ListTopicPartitions(ctx context.Context, cfg *Config, topic string) ([]int32, error) {
-	if len(cfg.Brokers) == 0 {
-		return nil, errEmptyBrokers
-	}
-
-	dialer, err := NewDialer(cfg)
+	transport, err := NewTransport(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("NewDialer error: %w", err)
+		return nil, fmt.Errorf("NewTransport error: %w", err)
 	}
 
-	conn, err := dialer.DialContext(ctx, "tcp", cfg.Brokers[0])
+	client := &kafkago.Client{
+		Addr:      kafkago.TCP(cfg.Brokers...),
+		Transport: transport,
+	}
+
+	resp, err := client.Metadata(ctx, &kafkago.MetadataRequest{
+		Topics: []string{topic},
+	})
 	if err != nil {
-		return nil, fmt.Errorf("dialer.DialContext error: %w", err)
+		return nil, fmt.Errorf("client.Metadata error: %w", err)
 	}
 
-	defer func() {
-		err := conn.Close()
-		if err != nil {
-			slog.Error("conn.Close failed", slog.Any("error", err))
-		}
-	}()
-
-	partitionMetas, err := conn.ReadPartitions(topic)
-	if err != nil {
-		return nil, fmt.Errorf("conn.ReadPartitions error: %w", err)
-	}
-
-	partitions, err := filterPartitions(partitionMetas, topic)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(partitions) == 0 {
-		return nil, fmt.Errorf("%w: %s", errTopicHasNoPartitions, topic)
-	}
-
-	slices.Sort(partitions)
-
-	return partitions, nil
-}
-
-func filterPartitions(partitionMetas []kafkago.Partition, topic string) ([]int32, error) {
-	partitions := make([]int32, 0, len(partitionMetas))
-	for _, partition := range partitionMetas {
-		if partition.Topic != topic {
+	for _, topicMeta := range resp.Topics {
+		if topicMeta.Name != topic {
 			continue
 		}
 
-		if partition.ID < math.MinInt32 || partition.ID > math.MaxInt32 {
-			return nil, fmt.Errorf("%w: %d", errPartitionIDOutOfInt32Range, partition.ID)
+		partitions := make([]int32, 0, len(topicMeta.Partitions))
+		for _, p := range topicMeta.Partitions {
+			partitions = append(partitions, int32(p.ID)) //nolint:gosec // partition ID fits in int32
 		}
 
-		partitions = append(partitions, int32(partition.ID))
+		if len(partitions) == 0 {
+			return nil, fmt.Errorf("%w: %s", errTopicHasNoPartitions, topic)
+		}
+
+		slices.Sort(partitions)
+
+		return partitions, nil
 	}
 
-	return partitions, nil
+	return nil, fmt.Errorf("%w: %s", errTopicHasNoPartitions, topic)
 }
