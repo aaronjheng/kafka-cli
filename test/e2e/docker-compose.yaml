@@ -85,6 +85,8 @@ services:
     container_name: ssh-proxy
     ports:
       - "2222:2222"
+    volumes:
+      - ./sshd_config_tcp_forwarding.conf:/config/sshd/sshd_config.d/tcp_forwarding.conf:ro
     environment:
       PUID: 1000
       PGID: 1000
