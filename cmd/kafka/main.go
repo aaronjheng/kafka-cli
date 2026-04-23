@@ -46,8 +46,6 @@ func rootCmd() *cobra.Command {
 	cmd.AddCommand(configCmd())
 	cmd.AddCommand(topicCmd())
 	cmd.AddCommand(groupCmd())
-	cmd.AddCommand(producerCmd())
-	cmd.AddCommand(consumerCmd())
 	cmd.AddCommand(versionCmd())
 	cmd.AddCommand(completionCmd())
 
