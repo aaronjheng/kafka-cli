@@ -2,3 +2,8 @@
 
 config.yaml
 config.yml
+
+test/e2e/certs/
+test/e2e/ssh_key
+test/e2e/ssh_key.pub
+test/e2e/ssh_public_key
