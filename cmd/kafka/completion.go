@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
+	"slices"
 
 	"github.com/spf13/cobra"
 )
@@ -68,4 +70,84 @@ PowerShell:
 	}
 
 	return cmd
+}
+
+func topicCompletionFunc(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	if cfg == nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	adminClient, closer, err := provideAdmin()
+	if err != nil {
+		slog.Debug("provideAdmin error", slog.Any("error", err))
+
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	defer func() {
+		err := closer(cmd.Context())
+		if err != nil {
+			slog.Debug("closer error", slog.Any("error", err))
+		}
+	}()
+
+	topics, err := adminClient.ListTopicNames()
+	if err != nil {
+		slog.Debug("admin.ListTopicNames error", slog.Any("error", err))
+
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	return topics, cobra.ShellCompDirectiveNoFileComp
+}
+
+func consumerGroupCompletionFunc(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	if cfg == nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	adminClient, closer, err := provideAdmin()
+	if err != nil {
+		slog.Debug("provideAdmin error", slog.Any("error", err))
+
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	defer func() {
+		err := closer(cmd.Context())
+		if err != nil {
+			slog.Debug("closer error", slog.Any("error", err))
+		}
+	}()
+
+	groups, err := adminClient.ListConsumerGroupIDs()
+	if err != nil {
+		slog.Debug("admin.ListConsumerGroupIDs error", slog.Any("error", err))
+
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	return groups, cobra.ShellCompDirectiveNoFileComp
+}
+
+func clusterCompletionFunc(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	if cfg == nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	names := make([]string, 0, len(cfg.Clusters))
+	for name := range cfg.Clusters {
+		names = append(names, name)
+	}
+
+	slices.Sort(names)
+
+	return names, cobra.ShellCompDirectiveNoFileComp
+}
+
+func registerClusterCompletion(cmd *cobra.Command) {
+	err := cmd.RegisterFlagCompletionFunc("cluster", clusterCompletionFunc)
+	if err != nil {
+		panic(fmt.Sprintf("RegisterFlagCompletionFunc error: %v", err))
+	}
 }

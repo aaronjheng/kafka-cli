@@ -12,6 +12,15 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+func (a *Admin) ListConsumerGroupIDs() ([]string, error) {
+	groups, err := a.clusterAdmin.ListConsumerGroups()
+	if err != nil {
+		return nil, fmt.Errorf("clusterAdmin.ListConsumerGroups error: %w", err)
+	}
+
+	return slices.SortedStableFunc(maps.Keys(groups), cmp.Compare), nil
+}
+
 func (a *Admin) ListConsumerGroups() error {
 	groups, err := a.clusterAdmin.ListConsumerGroups()
 	if err != nil {

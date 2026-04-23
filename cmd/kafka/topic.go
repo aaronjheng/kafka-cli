@@ -127,8 +127,9 @@ func topicCreateCmd() *cobra.Command {
 
 func topicDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Delete topics",
+		Use:               "delete",
+		Short:             "Delete topics",
+		ValidArgsFunction: topicCompletionFunc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -159,9 +160,10 @@ func topicDeleteCmd() *cobra.Command {
 
 func topicDescribeCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "describe TOPIC",
-		Short: "Show details of a topic",
-		Args:  cobra.ExactArgs(1),
+		Use:               "describe TOPIC",
+		Short:             "Show details of a topic",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: topicCompletionFunc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -191,9 +193,10 @@ func topicDescribeCmd() *cobra.Command {
 
 func topicConsumeCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "consume TOPIC",
-		Short: "Consume messages from a topic",
-		Args:  cobra.ExactArgs(1),
+		Use:               "consume TOPIC",
+		Short:             "Consume messages from a topic",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: topicCompletionFunc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterCfg, err := clusterConfig()
 			if err != nil {
@@ -233,9 +236,10 @@ func topicConsumeCmd() *cobra.Command {
 
 func topicProduceCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "produce TOPIC",
-		Short: "Produce messages to a topic",
-		Args:  cobra.ExactArgs(1),
+		Use:               "produce TOPIC",
+		Short:             "Produce messages to a topic",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: topicCompletionFunc,
 		RunE: func(_ *cobra.Command, args []string) error {
 			clusterCfg, err := clusterConfig()
 			if err != nil {

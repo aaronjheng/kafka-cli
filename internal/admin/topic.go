@@ -13,6 +13,15 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+func (a *Admin) ListTopicNames() ([]string, error) {
+	topicDetails, err := a.clusterAdmin.ListTopics()
+	if err != nil {
+		return nil, fmt.Errorf("clusterAdmin.ListTopics error: %w", err)
+	}
+
+	return slices.SortedStableFunc(maps.Keys(topicDetails), cmp.Compare), nil
+}
+
 func (a *Admin) ListTopics() error {
 	topicDetails, err := a.clusterAdmin.ListTopics()
 	if err != nil {

@@ -53,8 +53,9 @@ func groupListCmd() *cobra.Command {
 
 func groupDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Delete consumer groups",
+		Use:               "delete",
+		Short:             "Delete consumer groups",
+		ValidArgsFunction: consumerGroupCompletionFunc,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 

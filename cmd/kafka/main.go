@@ -43,6 +43,8 @@ func rootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&cluster, "cluster", "c", "", "Cluster name to operate.")
 	cmd.PersistentFlags().StringP("config", "f", "", "Config file path.")
 
+	registerClusterCompletion(cmd)
+
 	cmd.AddCommand(configCmd())
 	cmd.AddCommand(clusterCmd())
 	cmd.AddCommand(topicCmd())
