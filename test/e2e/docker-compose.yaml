@@ -120,7 +120,7 @@ services:
       start_period: 10s
 
   ssh-proxy:
-    image: lscr.io/linuxserver/openssh-server:9.7_p1-r0-ls131
+    image: lscr.io/linuxserver/openssh-server:latest
     container_name: ssh-proxy
     ports:
       - "2222:2222"
@@ -128,9 +128,9 @@ services:
       PUID: 1000
       PGID: 1000
       TZ: Etc/UTC
-      PASSWORD_ACCESS: "true"
-      USER_PASSWORD: testpassword
+      PASSWORD_ACCESS: "false"
       USER_NAME: testuser
+      PUBLIC_KEY: ${SSH_PUBLIC_KEY:-}
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 2222"]
       interval: 5s
