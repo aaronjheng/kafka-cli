@@ -6,6 +6,21 @@ set -euo pipefail
 
 PROPS_FILE="/etc/kafka/server.properties"
 
+# Determine the inter-broker listener name from KAFKA_LISTENERS.
+# For a single-node KRaft cluster with only one non-controller listener,
+# we set inter.broker.listener.name to that listener.
+INTER_BROKER_LISTENER=""
+if [ -n "${KAFKA_LISTENERS:-}" ]; then
+  # Extract the first non-CONTROLLER listener name
+  for listener in ${KAFKA_LISTENERS//,/ }; do
+    name="${listener%%://*}"
+    if [ "${name}" != "CONTROLLER" ]; then
+      INTER_BROKER_LISTENER="${name}"
+      break
+    fi
+  done
+fi
+
 cat > "${PROPS_FILE}" <<PROPS
 node.id=1
 process.roles=broker,controller
@@ -20,6 +35,10 @@ transaction.state.log.min.isr=1
 group.initial.rebalance.delay.ms=0
 auto.create.topics.enable=false
 PROPS
+
+if [ -n "${INTER_BROKER_LISTENER}" ]; then
+  echo "inter.broker.listener.name=${INTER_BROKER_LISTENER}" >> "${PROPS_FILE}"
+fi
 
 if [ -n "${KAFKA_SASL_ENABLED_MECHANISMS:-}" ]; then
   cat >> "${PROPS_FILE}" <<PROPS
