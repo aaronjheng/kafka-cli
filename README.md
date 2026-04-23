@@ -1,5 +1,9 @@
 # Kafka CLI
 
+A lightweight command-line tool for managing Apache Kafka clusters. It supports topic and consumer group administration, message producing/consuming, TLS/SASL authentication, and SSH tunneling.
+
+> **Trademark Notice:** Apache Kafka and Kafka are registered trademarks of the Apache Software Foundation.
+
 ## Installation
 
 ```shell
