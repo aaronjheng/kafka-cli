@@ -10,10 +10,6 @@ import (
 type DialerFunc func(ctx context.Context, network, addr string) (net.Conn, error)
 
 func NewDialerFunc(cfg *Config) (DialerFunc, error) {
-	return newDialerFunc(cfg)
-}
-
-func newDialerFunc(cfg *Config) (DialerFunc, error) {
 	sshClient, err := NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("NewClient error: %w", err)

@@ -43,9 +43,9 @@ func New(clusterConfig *Config) (*Kafka, error) {
 	}
 
 	if clusterConfig.SSH != nil {
-		dialer, err := ssh.NewProxyDialer(clusterConfig.SSH)
+		dialer, err := ssh.NewDialerFunc(clusterConfig.SSH)
 		if err != nil {
-			return nil, fmt.Errorf("ssh.NewProxyDialer error: %w", err)
+			return nil, fmt.Errorf("ssh.NewDialerFunc error: %w", err)
 		}
 
 		saramaCfg.Net.Proxy.Enable = true
@@ -63,16 +63,40 @@ func New(clusterConfig *Config) (*Kafka, error) {
 }
 
 func NewWriter(cfg *Config, topic string) (*kafkago.Writer, error) {
-	dialer, err := NewDialer(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("NewDialer error: %w", err)
+	transport := &kafkago.Transport{}
+
+	if cfg.SSH != nil {
+		dialerFunc, err := ssh.NewDialerFunc(cfg.SSH)
+		if err != nil {
+			return nil, fmt.Errorf("ssh.NewDialerFunc error: %w", err)
+		}
+
+		transport.Dial = dialerFunc
 	}
 
-	return kafkago.NewWriter(kafkago.WriterConfig{
-		Brokers: cfg.Brokers,
-		Topic:   topic,
-		Dialer:  dialer,
-	}), nil
+	if cfg.TLS != nil {
+		tlsConfig, err := newTLSConfig(cfg.TLS)
+		if err != nil {
+			return nil, fmt.Errorf("newTLSConfig error: %w", err)
+		}
+
+		transport.TLS = tlsConfig
+	}
+
+	if cfg.SASL != nil {
+		mechanism, err := newSASLMechanism(cfg.SASL)
+		if err != nil {
+			return nil, fmt.Errorf("newSASLMechanism error: %w", err)
+		}
+
+		transport.SASL = mechanism
+	}
+
+	return &kafkago.Writer{
+		Addr:      kafkago.TCP(cfg.Brokers...),
+		Topic:     topic,
+		Transport: transport,
+	}, nil
 }
 
 func NewPartitionReader(
