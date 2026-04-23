@@ -8,7 +8,7 @@ type Config struct {
 	Brokers []string    `mapstructure:"brokers"`
 	TLS     *TLS        `mapstructure:"tls"`
 	SASL    *SASL       `mapstructure:"sasl"`
-	SSH     *ssh.Config `mapstructure:"ssh_tunnel"`
+	SSH     *ssh.Config `mapstructure:"ssh"`
 }
 
 type TLS struct {

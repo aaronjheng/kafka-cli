@@ -14,7 +14,7 @@ import (
 type Config struct {
 	Host         string `mapstructure:"host"`
 	Port         int32  `mapstructure:"port"`
-	Username     string `mapstructure:"username"`
+	User         string `mapstructure:"user"`
 	IdentityFile string `mapstructure:"identity_file"`
 }
 
@@ -40,7 +40,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	}
 
 	sshCfg := &ssh.ClientConfig{
-		User: cfg.Username,
+		User: cfg.User,
 		// #nosec G106 -- compatibility mode: allow connecting to hosts not present in known_hosts.
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Auth: []ssh.AuthMethod{

@@ -16,3 +16,8 @@ clusters:
       mechanism: PLAIN
       username: xyz
       password: xyz
+    ssh:
+      host: bastion.example.com
+      port: 22
+      user: deploy
+      identity_file: ~/.ssh/id_ed25519
