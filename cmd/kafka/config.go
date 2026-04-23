@@ -10,7 +10,8 @@ import (
 
 func configCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "config",
+		Use:   "config",
+		Short: "Manage configuration",
 	}
 
 	cmd.AddCommand(configCatCmd())
@@ -20,7 +21,8 @@ func configCmd() *cobra.Command {
 
 func configCatCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "cat",
+		Use:   "cat",
+		Short: "Print configuration file contents",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			cfgPathname := cfg.Filepath()
 			fmt.Fprintf(os.Stdout, "# %s\n", cfgPathname)

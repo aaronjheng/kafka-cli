@@ -10,7 +10,7 @@ import (
 func groupCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "group",
-		Short: "group",
+		Short: "Manage consumer groups",
 	}
 
 	cmd.AddCommand(groupListCmd())
@@ -22,7 +22,7 @@ func groupCmd() *cobra.Command {
 func groupListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "list",
+		Short: "List consumer groups",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
@@ -54,7 +54,7 @@ func groupListCmd() *cobra.Command {
 func groupDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete",
-		Short: "delete",
+		Short: "Delete consumer groups",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 

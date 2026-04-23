@@ -30,7 +30,7 @@ type consumerMessage struct {
 func topicCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "topic",
-		Short: "topic",
+		Short: "Manage Kafka topics",
 		Run: func(_ *cobra.Command, _ []string) {
 		},
 	}
@@ -47,7 +47,8 @@ func topicCmd() *cobra.Command {
 
 func topicListCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "list",
+		Use:   "list",
+		Short: "List all topics",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
@@ -78,8 +79,9 @@ func topicListCmd() *cobra.Command {
 
 func topicCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  "create",
-		Args: cobra.ExactArgs(1),
+		Use:   "create",
+		Short: "Create a topic",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -125,7 +127,8 @@ func topicCreateCmd() *cobra.Command {
 
 func topicDeleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "delete",
+		Use:   "delete",
+		Short: "Delete topics",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -188,8 +191,9 @@ func topicDescribeCmd() *cobra.Command {
 
 func topicConsumeCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  "consume TOPIC",
-		Args: cobra.ExactArgs(1),
+		Use:   "consume TOPIC",
+		Short: "Consume messages from a topic",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterCfg, err := clusterConfig()
 			if err != nil {
@@ -229,8 +233,9 @@ func topicConsumeCmd() *cobra.Command {
 
 func topicProduceCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  "produce TOPIC",
-		Args: cobra.ExactArgs(1),
+		Use:   "produce TOPIC",
+		Short: "Produce messages to a topic",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			clusterCfg, err := clusterConfig()
 			if err != nil {
