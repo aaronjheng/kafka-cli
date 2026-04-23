@@ -106,14 +106,14 @@ func UniqueTopicName(t *testing.T) string {
 func WaitForKafka(t *testing.T, cli *KafkaCLI) {
 	t.Helper()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
 	for {
 		select {
 		case <-ctx.Done():
 			t.Fatal("timed out waiting for kafka to be ready")
-		case <-time.After(2 * time.Second):
+		case <-time.After(3 * time.Second):
 		}
 
 		_, err := cli.Run(ctx, "cluster", "describe")
@@ -127,7 +127,10 @@ func TopicExistsInOutput(output, topic string) bool {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 
 	for scanner.Scan() {
-		fields := strings.Fields(scanner.Text())
+		line := scanner.Text()
+		cleaned := strings.Trim(line, " │")
+
+		fields := strings.Fields(cleaned)
 		if len(fields) > 0 && fields[0] == topic {
 			return true
 		}

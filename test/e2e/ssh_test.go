@@ -18,7 +18,7 @@ default_cluster: ssh-proxy
 clusters:
   ssh-proxy:
     brokers:
-      - 127.0.0.1:9092
+      - kafka:9092
     ssh:
       host: 127.0.0.1
       port: 2222
@@ -62,7 +62,7 @@ default_cluster: ssh-proxy
 clusters:
   ssh-proxy:
     brokers:
-      - 127.0.0.1:9092
+      - kafka:9092
     ssh:
       host: 127.0.0.1
       port: 2222
