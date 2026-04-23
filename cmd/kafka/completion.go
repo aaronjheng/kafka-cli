@@ -144,10 +144,3 @@ func clusterCompletionFunc(_ *cobra.Command, _ []string, _ string) ([]string, co
 
 	return names, cobra.ShellCompDirectiveNoFileComp
 }
-
-func registerClusterCompletion(cmd *cobra.Command) {
-	err := cmd.RegisterFlagCompletionFunc("cluster", clusterCompletionFunc)
-	if err != nil {
-		panic(fmt.Sprintf("RegisterFlagCompletionFunc error: %v", err))
-	}
-}
