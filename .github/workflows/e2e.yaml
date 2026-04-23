@@ -90,7 +90,7 @@ jobs:
 
           echo "Checking ssh-proxy..."
           for i in $(seq 1 30); do
-            if docker exec ssh-proxy nc -z 127.0.0.1 2222 2>/dev/null; then
+            if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -i test/e2e/ssh_key -p 2222 testuser@127.0.0.1 echo "ok" 2>/dev/null; then
               echo "ssh-proxy is ready"
               break
             fi

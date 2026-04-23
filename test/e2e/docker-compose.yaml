@@ -86,7 +86,7 @@ services:
     ports:
       - "2222:2222"
     volumes:
-      - ./ssh_authorized_keys:/config/testuser/authorized_keys:ro
+      - ./ssh_authorized_keys:/config/testuser/authorized_keys
     environment:
       PUID: 1000
       PGID: 1000
