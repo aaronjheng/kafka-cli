@@ -106,7 +106,7 @@ func UniqueTopicName(t *testing.T) string {
 func WaitForKafka(t *testing.T, cli *KafkaCLI) {
 	t.Helper()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 
 	for {
@@ -116,10 +116,12 @@ func WaitForKafka(t *testing.T, cli *KafkaCLI) {
 		case <-time.After(3 * time.Second):
 		}
 
-		_, err := cli.Run(ctx, "cluster", "describe")
+		output, err := cli.Run(ctx, "cluster", "describe")
 		if err == nil {
 			return
 		}
+
+		t.Logf("waiting for kafka: %v, output: %s", err, output)
 	}
 }
 
