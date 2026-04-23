@@ -38,48 +38,46 @@ func consumerCmd() *cobra.Command {
 
 func consumerConsoleCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  "console",
-		RunE: runConsumerConsole,
+		Use: "console",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			clusterCfg, err := clusterConfig()
+			if err != nil {
+				return fmt.Errorf("clusterConfig error: %w", err)
+			}
+
+			topic, err := cmd.Flags().GetString("topic")
+			if err != nil {
+				return fmt.Errorf("get topic flag error: %w", err)
+			}
+
+			partition, err := cmd.Flags().GetInt32("partition")
+			if err != nil {
+				return fmt.Errorf("get partition flag error: %w", err)
+			}
+
+			dialer, err := kafka.NewDialer(clusterCfg)
+			if err != nil {
+				return fmt.Errorf("kafka.NewDialer error: %w", err)
+			}
+
+			partitions, err := resolvePartitions(cmd.Context(), clusterCfg, dialer, topic, partition)
+			if err != nil {
+				return err
+			}
+
+			partitionWidth := calculatePartitionWidth(partitions)
+			msgCh := startPartitionReaders(cmd.Context(), clusterCfg, dialer, topic, partitions)
+
+			printMessages(msgCh, partitionWidth)
+
+			return nil
+		},
 	}
 
 	cmd.Flags().StringP("topic", "t", "", "The topic to consume from")
 	cmd.Flags().Int32P("partition", "p", -1, "The partition to consume from.")
 
 	return cmd
-}
-
-func runConsumerConsole(cmd *cobra.Command, _ []string) error {
-	clusterCfg, err := clusterConfig()
-	if err != nil {
-		return fmt.Errorf("clusterConfig error: %w", err)
-	}
-
-	topic, err := cmd.Flags().GetString("topic")
-	if err != nil {
-		return fmt.Errorf("get topic flag error: %w", err)
-	}
-
-	partition, err := cmd.Flags().GetInt32("partition")
-	if err != nil {
-		return fmt.Errorf("get partition flag error: %w", err)
-	}
-
-	dialer, err := kafka.NewDialer(clusterCfg)
-	if err != nil {
-		return fmt.Errorf("kafka.NewDialer error: %w", err)
-	}
-
-	partitions, err := resolvePartitions(cmd.Context(), clusterCfg, dialer, topic, partition)
-	if err != nil {
-		return err
-	}
-
-	partitionWidth := calculatePartitionWidth(partitions)
-	msgCh := startPartitionReaders(cmd.Context(), clusterCfg, dialer, topic, partitions)
-
-	printMessages(msgCh, partitionWidth)
-
-	return nil
 }
 
 func resolvePartitions(
