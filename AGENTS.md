@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## CRITICAL RULES
+
+- **NEVER commit or push changes unless the user EXPLICITLY asks you to.** Even if the user says "commit", do NOT also push unless they say "push". Do NOT assume the user wants to commit after making changes. Always wait for explicit instruction.
+
 ## Commands
 
 ```bash
