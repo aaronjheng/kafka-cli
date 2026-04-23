@@ -45,7 +45,7 @@ func New(clusterConfig *Config) (*Kafka, error) {
 	if clusterConfig.SSH != nil {
 		dialer, err := ssh.NewProxyDialer(clusterConfig.SSH)
 		if err != nil {
-			return nil, fmt.Errorf("newSSHDialFunc error: %w", err)
+			return nil, fmt.Errorf("ssh.NewProxyDialer error: %w", err)
 		}
 
 		saramaCfg.Net.Proxy.Enable = true
