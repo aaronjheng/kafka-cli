@@ -37,7 +37,9 @@ jobs:
         run: bash test/e2e/generate-certs.sh
 
       - name: Generate SSH key
-        run: bash test/e2e/setup-ssh-key.sh
+        run: |
+          bash test/e2e/setup-ssh-key.sh
+          echo "SSH_PUBLIC_KEY=$(cat test/e2e/ssh_public_key)" >> "$GITHUB_ENV"
 
       - name: Start Kafka containers
         run: docker compose -f test/e2e/docker-compose.yaml up -d --no-deps
@@ -90,7 +92,7 @@ jobs:
 
           echo "Checking ssh-proxy..."
           for i in $(seq 1 30); do
-            if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -i test/e2e/ssh_key -p 2222 testuser@127.0.0.1 echo "ok" 2>/dev/null; then
+            if timeout 5 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o ConnectTimeout=3 -i test/e2e/ssh_key -p 2222 testuser@127.0.0.1 echo "ok" 2>/dev/null; then
               echo "ssh-proxy is ready"
               break
             fi

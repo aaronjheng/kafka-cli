@@ -3,15 +3,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SSH_KEY="${SCRIPT_DIR}/ssh_key"
-AUTHORIZED_KEYS="${SCRIPT_DIR}/ssh_authorized_keys"
+SSH_PUB_KEY_FILE="${SCRIPT_DIR}/ssh_public_key"
 
-rm -f "${SSH_KEY}" "${SSH_KEY}.pub" "${AUTHORIZED_KEYS}"
+rm -f "${SSH_KEY}" "${SSH_KEY}.pub" "${SSH_PUB_KEY_FILE}"
 
 ssh-keygen -t ed25519 -f "${SSH_KEY}" -N "" -C "e2e-test" 2>/dev/null
 
-cp "${SSH_KEY}.pub" "${AUTHORIZED_KEYS}"
+cp "${SSH_KEY}.pub" "${SSH_PUB_KEY_FILE}"
 chmod 600 "${SSH_KEY}"
-chmod 644 "${AUTHORIZED_KEYS}"
 
 echo "SSH key generated at ${SSH_KEY}"
-echo "Authorized keys at ${AUTHORIZED_KEYS}"
+echo "SSH public key at ${SSH_PUB_KEY_FILE}"
