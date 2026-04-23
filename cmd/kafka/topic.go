@@ -188,17 +188,15 @@ func topicDescribeCmd() *cobra.Command {
 
 func topicConsumeCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "consume",
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		Use:  "consume TOPIC",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterCfg, err := clusterConfig()
 			if err != nil {
 				return fmt.Errorf("clusterConfig error: %w", err)
 			}
 
-			topic, err := cmd.Flags().GetString("topic")
-			if err != nil {
-				return fmt.Errorf("get topic flag error: %w", err)
-			}
+			topic := args[0]
 
 			partition, err := cmd.Flags().GetInt32("partition")
 			if err != nil {
@@ -224,7 +222,6 @@ func topicConsumeCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("topic", "t", "", "The topic to consume from")
 	cmd.Flags().Int32P("partition", "p", -1, "The partition to consume from.")
 
 	return cmd
@@ -232,17 +229,15 @@ func topicConsumeCmd() *cobra.Command {
 
 func topicProduceCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "produce",
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		Use:  "produce TOPIC",
+		Args: cobra.ExactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
 			clusterCfg, err := clusterConfig()
 			if err != nil {
 				return fmt.Errorf("clusterConfig error: %w", err)
 			}
 
-			topic, err := cmd.Flags().GetString("topic")
-			if err != nil {
-				return fmt.Errorf("get topic flag error: %w", err)
-			}
+			topic := args[0]
 
 			writer, err := kafka.NewWriter(clusterCfg, topic)
 			if err != nil {
@@ -275,8 +270,6 @@ func topicProduceCmd() *cobra.Command {
 			return nil
 		},
 	}
-
-	cmd.Flags().StringP("topic", "t", "", "The topic to produce messages to.")
 
 	return cmd
 }
