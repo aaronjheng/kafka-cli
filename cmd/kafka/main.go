@@ -44,6 +44,7 @@ func rootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringP("config", "f", "", "Config file path.")
 
 	cmd.AddCommand(configCmd())
+	cmd.AddCommand(clusterCmd())
 	cmd.AddCommand(topicCmd())
 	cmd.AddCommand(groupCmd())
 	cmd.AddCommand(versionCmd())

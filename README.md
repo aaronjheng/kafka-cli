@@ -79,6 +79,14 @@ Print the effective configuration file contents.
 kafka config cat
 ```
 
+### `kafka cluster describe`
+
+Show cluster overview (controller ID, number of brokers/topics, and broker details).
+
+```shell
+kafka cluster describe
+```
+
 ### `kafka topic list`
 
 List all topics in the cluster.
