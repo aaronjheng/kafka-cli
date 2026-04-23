@@ -33,22 +33,11 @@ jobs:
       - name: Build CLI binary
         run: go build -o ./kafka ./cmd/kafka
 
-      - name: Generate TLS certificates
-        run: bash test/e2e/generate-certs.sh
-
-      - name: Generate SSH key
-        run: |
-          bash test/e2e/setup-ssh-key.sh
-          echo "SSH_PUBLIC_KEY=$(cat test/e2e/ssh_public_key)" >> "$GITHUB_ENV"
-
-      - name: Start Kafka containers
-        run: docker compose -f test/e2e/docker-compose.yaml up -d --no-deps
+      - name: Start Kafka container
+        run: docker compose -f test/e2e/docker-compose.yaml up -d kafka
         timeout-minutes: 5
 
-      - name: Configure containers
-        run: bash test/e2e/configure-containers.sh
-
-      - name: Wait for all services to be ready
+      - name: Wait for Kafka to be ready
         run: |
           echo "Checking kafka (plaintext)..."
           for i in $(seq 1 30); do
@@ -60,47 +49,7 @@ jobs:
             sleep 5
           done
 
-          echo "Checking kafka-sasl..."
-          for i in $(seq 1 30); do
-            if docker exec kafka-sasl /opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9094 --list --command-config /tmp/client-sasl.properties 2>/dev/null; then
-              echo "kafka-sasl is ready"
-              break
-            fi
-            echo "  retry $i..."
-            sleep 5
-          done
-
-          echo "Checking kafka-tls..."
-          for i in $(seq 1 30); do
-            if docker exec kafka-tls /opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9095 --list --command-config /tmp/client-ssl.properties 2>/dev/null; then
-              echo "kafka-tls is ready"
-              break
-            fi
-            echo "  retry $i..."
-            sleep 5
-          done
-
-          echo "Checking kafka-sasl-ssl..."
-          for i in $(seq 1 30); do
-            if docker exec kafka-sasl-ssl /opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9096 --list --command-config /tmp/client-sasl-ssl.properties 2>/dev/null; then
-              echo "kafka-sasl-ssl is ready"
-              break
-            fi
-            echo "  retry $i..."
-            sleep 5
-          done
-
-          echo "Checking ssh-proxy..."
-          for i in $(seq 1 30); do
-            if timeout 5 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o ConnectTimeout=3 -i test/e2e/ssh_key -p 2222 testuser@127.0.0.1 echo "ok" 2>/dev/null; then
-              echo "ssh-proxy is ready"
-              break
-            fi
-            echo "  retry $i..."
-            sleep 2
-          done
-
-          echo "All services ready"
+          echo "Kafka is ready"
 
       - name: Run E2E tests
         run: go test -v -timeout 300s ./test/e2e/...
