@@ -1,6 +1,6 @@
 services:
   kafka-sasl:
-    image: bitnami/kafka:3.9.0
+    image: bitnami/kafka:3
     container_name: kafka-sasl
     ports:
       - "9093:9093"
