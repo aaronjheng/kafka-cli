@@ -55,18 +55,13 @@ func consumerConsoleCmd() *cobra.Command {
 				return fmt.Errorf("get partition flag error: %w", err)
 			}
 
-			dialer, err := kafka.NewDialer(clusterCfg)
-			if err != nil {
-				return fmt.Errorf("kafka.NewDialer error: %w", err)
-			}
-
-			partitions, err := resolvePartitions(cmd.Context(), clusterCfg, dialer, topic, partition)
+			partitions, err := resolvePartitions(cmd.Context(), clusterCfg, topic, partition)
 			if err != nil {
 				return err
 			}
 
 			partitionWidth := calculatePartitionWidth(partitions)
-			msgCh := startPartitionReaders(cmd.Context(), clusterCfg, dialer, topic, partitions)
+			msgCh := startPartitionReaders(cmd.Context(), clusterCfg, topic, partitions)
 
 			printMessages(msgCh, partitionWidth)
 
@@ -83,12 +78,11 @@ func consumerConsoleCmd() *cobra.Command {
 func resolvePartitions(
 	ctx context.Context,
 	clusterCfg *kafka.Config,
-	dialer *kafkago.Dialer,
 	topic string,
 	partition int32,
 ) ([]int32, error) {
 	if partition == -1 {
-		partitions, err := kafka.ListTopicPartitions(ctx, clusterCfg.Brokers, dialer, topic)
+		partitions, err := kafka.ListTopicPartitions(ctx, clusterCfg, topic)
 		if err != nil {
 			return nil, fmt.Errorf("kafka.ListTopicPartitions error: %w", err)
 		}
@@ -115,7 +109,6 @@ func calculatePartitionWidth(partitions []int32) int {
 func startPartitionReaders(
 	ctx context.Context,
 	clusterCfg *kafka.Config,
-	dialer *kafkago.Dialer,
 	topic string,
 	partitions []int32,
 ) <-chan consumerMessage {
@@ -125,7 +118,7 @@ func startPartitionReaders(
 
 	for _, partition := range partitions {
 		waitGroup.Go(func() {
-			readPartitionMessages(ctx, clusterCfg, dialer, topic, partition, msgCh)
+			readPartitionMessages(ctx, clusterCfg, topic, partition, msgCh)
 		})
 	}
 
@@ -140,12 +133,11 @@ func startPartitionReaders(
 func readPartitionMessages(
 	ctx context.Context,
 	clusterCfg *kafka.Config,
-	dialer *kafkago.Dialer,
 	topic string,
 	partition int32,
 	msgCh chan<- consumerMessage,
 ) {
-	reader, err := kafka.NewPartitionReader(clusterCfg.Brokers, dialer, topic, partition)
+	reader, err := kafka.NewPartitionReader(clusterCfg, topic, partition)
 	if err != nil {
 		slog.Error("kafka.NewPartitionReader failed", slog.Any("error", err))
 

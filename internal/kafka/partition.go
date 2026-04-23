@@ -17,12 +17,17 @@ var (
 	errPartitionIDOutOfInt32Range = errors.New("partition id out of int32 range")
 )
 
-func ListTopicPartitions(ctx context.Context, brokers []string, dialer *kafkago.Dialer, topic string) ([]int32, error) {
-	if len(brokers) == 0 {
+func ListTopicPartitions(ctx context.Context, cfg *Config, topic string) ([]int32, error) {
+	if len(cfg.Brokers) == 0 {
 		return nil, errEmptyBrokers
 	}
 
-	conn, err := dialer.DialContext(ctx, "tcp", brokers[0])
+	dialer, err := NewDialer(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("NewDialer error: %w", err)
+	}
+
+	conn, err := dialer.DialContext(ctx, "tcp", cfg.Brokers[0])
 	if err != nil {
 		return nil, fmt.Errorf("dialer.DialContext error: %w", err)
 	}
@@ -39,6 +44,21 @@ func ListTopicPartitions(ctx context.Context, brokers []string, dialer *kafkago.
 		return nil, fmt.Errorf("conn.ReadPartitions error: %w", err)
 	}
 
+	partitions, err := filterPartitions(partitionMetas, topic)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(partitions) == 0 {
+		return nil, fmt.Errorf("%w: %s", errTopicHasNoPartitions, topic)
+	}
+
+	slices.Sort(partitions)
+
+	return partitions, nil
+}
+
+func filterPartitions(partitionMetas []kafkago.Partition, topic string) ([]int32, error) {
 	partitions := make([]int32, 0, len(partitionMetas))
 	for _, partition := range partitionMetas {
 		if partition.Topic != topic {
@@ -51,12 +71,6 @@ func ListTopicPartitions(ctx context.Context, brokers []string, dialer *kafkago.
 
 		partitions = append(partitions, int32(partition.ID))
 	}
-
-	if len(partitions) == 0 {
-		return nil, fmt.Errorf("%w: %s", errTopicHasNoPartitions, topic)
-	}
-
-	slices.Sort(partitions)
 
 	return partitions, nil
 }

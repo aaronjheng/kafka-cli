@@ -21,6 +21,39 @@ const defaultDialTimeout = 10 * time.Second
 
 var errUnsupportedSASLMechanism = errors.New("unsupported sasl mechanism")
 
+func NewTransport(cfg *Config) (*kafkago.Transport, error) {
+	transport := &kafkago.Transport{}
+
+	if cfg.SSH != nil {
+		dialerFunc, err := ssh.NewDialerFunc(cfg.SSH)
+		if err != nil {
+			return nil, fmt.Errorf("ssh.NewDialerFunc error: %w", err)
+		}
+
+		transport.Dial = dialerFunc
+	}
+
+	if cfg.TLS != nil {
+		tlsConfig, err := newTLSConfig(cfg.TLS)
+		if err != nil {
+			return nil, fmt.Errorf("newTLSConfig error: %w", err)
+		}
+
+		transport.TLS = tlsConfig
+	}
+
+	if cfg.SASL != nil {
+		mechanism, err := newSASLMechanism(cfg.SASL)
+		if err != nil {
+			return nil, fmt.Errorf("newSASLMechanism error: %w", err)
+		}
+
+		transport.SASL = mechanism
+	}
+
+	return transport, nil
+}
+
 func NewDialer(cfg *Config) (*kafkago.Dialer, error) {
 	dialer := &kafkago.Dialer{
 		Timeout: defaultDialTimeout,

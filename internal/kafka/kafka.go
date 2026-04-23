@@ -63,33 +63,9 @@ func New(clusterConfig *Config) (*Kafka, error) {
 }
 
 func NewWriter(cfg *Config, topic string) (*kafkago.Writer, error) {
-	transport := &kafkago.Transport{}
-
-	if cfg.SSH != nil {
-		dialerFunc, err := ssh.NewDialerFunc(cfg.SSH)
-		if err != nil {
-			return nil, fmt.Errorf("ssh.NewDialerFunc error: %w", err)
-		}
-
-		transport.Dial = dialerFunc
-	}
-
-	if cfg.TLS != nil {
-		tlsConfig, err := newTLSConfig(cfg.TLS)
-		if err != nil {
-			return nil, fmt.Errorf("newTLSConfig error: %w", err)
-		}
-
-		transport.TLS = tlsConfig
-	}
-
-	if cfg.SASL != nil {
-		mechanism, err := newSASLMechanism(cfg.SASL)
-		if err != nil {
-			return nil, fmt.Errorf("newSASLMechanism error: %w", err)
-		}
-
-		transport.SASL = mechanism
+	transport, err := NewTransport(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("NewTransport error: %w", err)
 	}
 
 	return &kafkago.Writer{
@@ -99,14 +75,14 @@ func NewWriter(cfg *Config, topic string) (*kafkago.Writer, error) {
 	}, nil
 }
 
-func NewPartitionReader(
-	brokers []string,
-	dialer *kafkago.Dialer,
-	topic string,
-	partition int32,
-) (*kafkago.Reader, error) {
+func NewPartitionReader(cfg *Config, topic string, partition int32) (*kafkago.Reader, error) {
+	dialer, err := NewDialer(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("NewDialer error: %w", err)
+	}
+
 	return kafkago.NewReader(kafkago.ReaderConfig{
-		Brokers:   brokers,
+		Brokers:   cfg.Brokers,
 		Topic:     topic,
 		Partition: int(partition),
 		Dialer:    dialer,
