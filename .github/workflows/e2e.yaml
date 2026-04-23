@@ -9,13 +9,12 @@ on:
 permissions:
   contents: read
 
-env:
-  KAFKA_VERSION: ${{ matrix.kafka-version }}
-
 jobs:
   e2e:
     name: E2E (Kafka ${{ matrix.kafka-version }})
     runs-on: ubuntu-latest
+    env:
+      KAFKA_VERSION: ${{ matrix.kafka-version }}
     strategy:
       fail-fast: false
       matrix:
