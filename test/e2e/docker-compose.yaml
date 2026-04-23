@@ -16,12 +16,6 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --list"]
-      interval: 5s
-      timeout: 10s
-      retries: 30
-      start_period: 10s
 
   kafka-sasl:
     image: *kafka-image
@@ -40,12 +34,6 @@ services:
       KAFKA_SASL_MECHANISM_CONTROLLER_PROTOCOL: PLAIN
       KAFKA_SASL_JAAS_CONFIG_LINE: >-
         listener.name.sasl_plaintext.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret" user_admin="admin-secret" user_testuser="testuser-secret";
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9094 --list --command-config /tmp/client-sasl.properties"]
-      interval: 5s
-      timeout: 10s
-      retries: 30
-      start_period: 10s
 
   kafka-tls:
     image: *kafka-image
@@ -66,12 +54,6 @@ services:
       KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.truststore.jks
       KAFKA_SSL_TRUSTSTORE_PASSWORD: changeit
       KAFKA_SSL_CLIENT_AUTH: requested
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9095 --list --command-config /tmp/client-ssl.properties"]
-      interval: 5s
-      timeout: 10s
-      retries: 30
-      start_period: 10s
 
   kafka-sasl-ssl:
     image: *kafka-image
@@ -97,12 +79,6 @@ services:
       KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.truststore.jks
       KAFKA_SSL_TRUSTSTORE_PASSWORD: changeit
       KAFKA_SSL_CLIENT_AUTH: requested
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9096 --list --command-config /tmp/client-sasl-ssl.properties"]
-      interval: 5s
-      timeout: 10s
-      retries: 30
-      start_period: 10s
 
   ssh-proxy:
     image: lscr.io/linuxserver/openssh-server:latest
@@ -116,9 +92,3 @@ services:
       PASSWORD_ACCESS: "false"
       USER_NAME: testuser
       PUBLIC_KEY: ${SSH_PUBLIC_KEY:-}
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 2222"]
-      interval: 5s
-      timeout: 10s
-      retries: 30
-      start_period: 15s
