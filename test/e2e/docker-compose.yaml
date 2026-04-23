@@ -85,10 +85,11 @@ services:
     container_name: ssh-proxy
     ports:
       - "2222:2222"
+    volumes:
+      - ./ssh_authorized_keys:/config/testuser/authorized_keys:ro
     environment:
       PUID: 1000
       PGID: 1000
       TZ: Etc/UTC
       PASSWORD_ACCESS: "false"
       USER_NAME: testuser
-      PUBLIC_KEY: ${SSH_PUBLIC_KEY:-}
