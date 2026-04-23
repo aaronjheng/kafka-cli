@@ -62,3 +62,56 @@ jobs:
       - name: Stop Kafka containers
         if: always()
         run: docker compose -f test/e2e/docker-compose.yaml down -v
+
+  e2e-sasl:
+    name: E2E SASL (Kafka ${{ matrix.kafka-version }})
+    runs-on: ubuntu-latest
+    env:
+      KAFKA_VERSION: ${{ matrix.kafka-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        kafka-version:
+          - "4.2.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build CLI binary
+        run: go build -o ./kafka ./cmd/kafka
+
+      - name: Start SASL Kafka container
+        run: docker compose -f test/e2e/docker-compose-sasl.yaml up -d kafka-sasl
+        timeout-minutes: 5
+
+      - name: Wait for SASL Kafka to be ready
+        run: |
+          echo "Checking kafka (SASL)..."
+          for i in $(seq 1 30); do
+            if docker exec kafka-sasl /opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9093 --list --command-config /etc/kafka/kafka-jaas.conf 2>/dev/null; then
+              echo "kafka (SASL) is ready"
+              break
+            fi
+            echo "  retry $i..."
+            sleep 5
+          done
+
+          echo "Kafka SASL is ready"
+
+      - name: Run E2E SASL tests
+        run: go test -v -timeout 300s -run 'Test.*SASL' ./test/e2e/...
+
+      - name: Collect container logs on failure
+        if: failure()
+        run: |
+          docker compose -f test/e2e/docker-compose-sasl.yaml logs
+
+      - name: Stop SASL Kafka containers
+        if: always()
+        run: docker compose -f test/e2e/docker-compose-sasl.yaml down -v
