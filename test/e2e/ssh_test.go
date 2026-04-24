@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
@@ -13,18 +12,23 @@ const (
 	sshTestHost   = "127.0.0.1"
 )
 
+var sshKeyPath string //nolint:gochecknoglobals // test-only: set by TestMain
+
 func TestMain(m *testing.M) {
-	if os.Getenv(sshKeyPathEnv) == "" {
-		fmt.Fprintln(os.Stderr, "SSH_TEST_KEY_PATH must be set for SSH E2E tests")
-		os.Exit(1)
-	}
+	sshKeyPath = os.Getenv(sshKeyPathEnv)
 
 	os.Exit(m.Run())
 }
 
-func sshConfig() string {
-	keyPath := os.Getenv(sshKeyPathEnv)
+func requireSSH(t *testing.T) {
+	t.Helper()
 
+	if sshKeyPath == "" {
+		t.Skip("SSH_TEST_KEY_PATH not set, skipping SSH E2E test")
+	}
+}
+
+func sshConfig() string {
 	return `
 default_cluster: ssh
 
@@ -36,12 +40,13 @@ clusters:
       host: ` + sshTestHost + `
       port: ` + sshTestPort + `
       user: ` + sshTestUser + `
-      identity_file: ` + keyPath + `
+      identity_file: ` + sshKeyPath + `
 `
 }
 
 func TestClusterDescribe_SSH(t *testing.T) {
 	t.Parallel()
+	requireSSH(t)
 
 	cli := NewKafkaCLI(t)
 	cli.WriteConfig(t, sshConfig())
@@ -66,6 +71,7 @@ func TestClusterDescribe_SSH(t *testing.T) {
 
 func TestTopicProduceConsume_SSH(t *testing.T) {
 	t.Parallel()
+	requireSSH(t)
 
 	cli := NewKafkaCLI(t)
 	cli.WriteConfig(t, sshConfig())
@@ -88,6 +94,7 @@ func TestTopicProduceConsume_SSH(t *testing.T) {
 
 func TestConnectionFailure_SSH(t *testing.T) {
 	t.Parallel()
+	requireSSH(t)
 
 	cli := NewKafkaCLI(t)
 	cli.WriteConfig(t, `
