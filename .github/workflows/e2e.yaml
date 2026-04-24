@@ -45,7 +45,7 @@ jobs:
       - name: Prepare k8s manifest
         run: |
           sed -i "s|PLACEHOLDER_SSH_PUBLIC_KEY|$(cat /tmp/ssh-test/id_ed25519.pub)|" test/e2e/kafka/pod.yaml
-          sed -i "s|PLACEHOLDER_SSHD_CONFIG_PATH|${{ github.workspace }}/test/e2e/kafka/sshd_config.d|" test/e2e/kafka/pod.yaml
+          sed -i "s|PLACEHOLDER_SSHD_CONFIG_PATH|${{ github.workspace }}/test/e2e/kafka/ssh/sshd_config.d|" test/e2e/kafka/pod.yaml
           sed -i "s|PLACEHOLDER_SASL_CONFIG_PATH|${{ github.workspace }}/test/e2e/kafka/sasl|" test/e2e/kafka/pod.yaml
 
       - name: Start podman pod
