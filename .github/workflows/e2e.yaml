@@ -42,11 +42,66 @@ jobs:
           ssh-keygen -t ed25519 -f /tmp/ssh-test/id_ed25519 -N ""
           echo "key-path=/tmp/ssh-test/id_ed25519" >> "$GITHUB_OUTPUT"
 
+      - name: Generate TLS certificates
+        id: tls-certs
+        run: |
+          TLS_DIR=$(mktemp -d)
+          chmod 755 "${TLS_DIR}"
+
+          # Generate CA key and certificate
+          openssl req -new -x509 -keyout "${TLS_DIR}/ca-key" -out "${TLS_DIR}/ca-cert" \
+            -days 365 -passout pass:capass \
+            -subj "/CN=TestCA"
+
+          # Generate server keystore and key
+          keytool -keystore "${TLS_DIR}/kafka.server.keystore.jks" \
+            -alias localhost -keyalg RSA -validity 365 \
+            -storepass keystorepass -keypass keystorepass \
+            -dname "CN=localhost" -genkeypair
+
+          # Create CSR
+          keytool -keystore "${TLS_DIR}/kafka.server.keystore.jks" \
+            -alias localhost -certreq -file "${TLS_DIR}/server-cert-sign-request" \
+            -storepass keystorepass -keypass keystorepass
+
+          # Sign server cert with CA
+          openssl x509 -req -CA "${TLS_DIR}/ca-cert" -CAkey "${TLS_DIR}/ca-key" \
+            -in "${TLS_DIR}/server-cert-sign-request" \
+            -out "${TLS_DIR}/server-cert-signed" \
+            -days 365 -CAcreateserial -passin pass:capass
+
+          # Import CA cert into keystore
+          keytool -keystore "${TLS_DIR}/kafka.server.keystore.jks" \
+            -alias CARoot -importcert -file "${TLS_DIR}/ca-cert" \
+            -storepass keystorepass -noprompt
+
+          # Import signed server cert into keystore
+          keytool -keystore "${TLS_DIR}/kafka.server.keystore.jks" \
+            -alias localhost -importcert -file "${TLS_DIR}/server-cert-signed" \
+            -storepass keystorepass -keypass keystorepass -noprompt
+
+          # Create truststore with CA cert
+          keytool -keystore "${TLS_DIR}/kafka.server.truststore.jks" \
+            -alias CARoot -importcert -file "${TLS_DIR}/ca-cert" \
+            -storepass truststorepass -noprompt
+
+          # Write credential files for apache/kafka image
+          printf "keystorepass" > "${TLS_DIR}/keystore_creds"
+          printf "keystorepass" > "${TLS_DIR}/key_creds"
+          printf "truststorepass" > "${TLS_DIR}/truststore_creds"
+
+          # Export CA cert as PEM for the CLI client
+          cp "${TLS_DIR}/ca-cert" "${TLS_DIR}/ca-cert.pem"
+
+          echo "tls-certs-path=${TLS_DIR}" >> "$GITHUB_OUTPUT"
+          echo "ca-cert-path=${TLS_DIR}/ca-cert.pem" >> "$GITHUB_OUTPUT"
+
       - name: Prepare k8s manifest
         run: |
           sed -i "s|PLACEHOLDER_SSH_PUBLIC_KEY|$(cat /tmp/ssh-test/id_ed25519.pub)|" test/e2e/kafka/pod.yaml
           sed -i "s|PLACEHOLDER_SSHD_CONFIG_PATH|${{ github.workspace }}/test/e2e/kafka/ssh/sshd_config.d|" test/e2e/kafka/pod.yaml
           sed -i "s|PLACEHOLDER_SASL_CONFIG_PATH|${{ github.workspace }}/test/e2e/kafka/sasl|" test/e2e/kafka/pod.yaml
+          sed -i "s|PLACEHOLDER_TLS_CERTS_PATH|${{ steps.tls-certs.outputs.tls-certs-path }}|" test/e2e/kafka/pod.yaml
 
       - name: Start podman pod
         run: |
@@ -86,6 +141,7 @@ jobs:
         env:
           SSH_TEST_KEY_PATH: ${{ steps.ssh-key.outputs.key-path }}
           KAFKA_CLI_BINARY: ${{ github.workspace }}/kafka
+          TLS_TEST_CA_CERT: ${{ steps.tls-certs.outputs.ca-cert-path }}
         run: |
           go build -o ./kafka ./cmd/kafka
           go test -v -timeout 300s ./test/e2e/...
