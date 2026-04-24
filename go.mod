@@ -3,7 +3,7 @@ module github.com/aaronjheng/kafka-cli
 go 1.26.0
 
 require (
-	github.com/IBM/sarama v1.47.0
+	github.com/IBM/sarama v1.48.0
 	github.com/adrg/xdg v0.5.3
 	github.com/olekukonko/tablewriter v1.1.4
 	github.com/segmentio/kafka-go v0.4.50
@@ -49,7 +49,7 @@ require (
 	github.com/xdg-go/scram v1.2.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/net v0.52.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 )
