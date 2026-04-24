@@ -42,3 +42,16 @@ just bump-deps
 - Wrap errors with `fmt.Errorf("...: %w", err)`.
 - Do not enable the `ireturn` linter; returning interfaces is common in this project.
 - Do not enable deprecated linters.
+
+## Git Workflow Rules
+
+- NEVER run `git commit`, `git push`, or any other git mutations unless explicitly instructed
+- Always ask for confirmation before committing changes
+- Always ask for confirmation before pushing to remote
+
+## Commit Message Guidelines
+
+- Use a single sentence
+- Do not use Conventional Commits (e.g., no `feat:`, `fix:` prefixes)
+- Capitalize the first letter
+- Example: "Add delete menu to connection list"
