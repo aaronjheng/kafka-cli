@@ -28,12 +28,9 @@ var defaultConfig = &Config{
 func LoadConfig(cfgFilepath string) (*Config, error) {
 	cfgRoot := path.Join(xdg.ConfigHome, "kafka")
 
-	_, err := os.Stat(cfgRoot)
-	if os.IsNotExist(err) {
-		err = os.Mkdir(cfgRoot, configDirPermission)
-		if err != nil {
-			return nil, fmt.Errorf("os.Mkdir error: %w", err)
-		}
+	err := os.MkdirAll(cfgRoot, configDirPermission)
+	if err != nil {
+		return nil, fmt.Errorf("os.MkdirAll error: %w", err)
 	}
 
 	if cfgFilepath != "" {

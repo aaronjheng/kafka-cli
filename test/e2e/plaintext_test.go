@@ -119,12 +119,9 @@ clusters:
 		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
 	})
 
-	messages := "hello-e2e-test\ne2e-produce-message\n"
+	expectedMessages := []string{"hello-e2e-test", "e2e-produce-message"}
 
-	_, err = cli.RunWithStdin(t.Context(), messages, "topic", "produce", topic)
-	if err != nil {
-		t.Fatalf("produce messages failed: %v", err)
-	}
+	ProduceAndAssertConsumed(t, cli, topic, expectedMessages, "-p", "0")
 }
 
 func TestGroupList_PlainText(t *testing.T) {
