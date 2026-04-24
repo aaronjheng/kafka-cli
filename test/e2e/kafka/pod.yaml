@@ -36,23 +36,39 @@ spec:
       hostPort: 9092
     - containerPort: 9094
       hostPort: 9094
+    - containerPort: 9095
+      hostPort: 9095
     env:
     - name: KAFKA_NODE_ID
       value: "1"
     - name: KAFKA_PROCESS_ROLES
       value: "broker,controller"
     - name: KAFKA_LISTENERS
-      value: "PLAINTEXT://0.0.0.0:9092,SASL_PLAINTEXT://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093"
+      value: "PLAINTEXT://0.0.0.0:9092,SASL_PLAINTEXT://0.0.0.0:9094,SSL://0.0.0.0:9095,CONTROLLER://0.0.0.0:9093"
     - name: KAFKA_ADVERTISED_LISTENERS
-      value: "PLAINTEXT://127.0.0.1:9092,SASL_PLAINTEXT://127.0.0.1:9094"
+      value: "PLAINTEXT://127.0.0.1:9092,SASL_PLAINTEXT://127.0.0.1:9094,SSL://127.0.0.1:9095"
     - name: KAFKA_CONTROLLER_LISTENER_NAMES
       value: "CONTROLLER"
     - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-      value: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SASL_PLAINTEXT:SASL_PLAINTEXT"
+      value: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SASL_PLAINTEXT:SASL_PLAINTEXT,SSL:SSL"
     - name: KAFKA_SASL_ENABLED_MECHANISMS
       value: "PLAIN"
     - name: KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL
       value: "PLAIN"
+    - name: KAFKA_SSL_KEYSTORE_FILENAME
+      value: "kafka.server.keystore.jks"
+    - name: KAFKA_SSL_KEYSTORE_CREDENTIALS
+      value: "keystore_creds"
+    - name: KAFKA_SSL_KEY_CREDENTIALS
+      value: "key_creds"
+    - name: KAFKA_SSL_TRUSTSTORE_FILENAME
+      value: "kafka.server.truststore.jks"
+    - name: KAFKA_SSL_TRUSTSTORE_CREDENTIALS
+      value: "truststore_creds"
+    - name: KAFKA_SSL_CLIENT_AUTH
+      value: "none"
+    - name: KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+      value: ""
     - name: KAFKA_OPTS
       value: "-Djava.security.auth.login.config=/etc/kafka/sasl/kafka_server_jaas.conf"
     - name: KAFKA_CONTROLLER_QUORUM_VOTERS
@@ -69,6 +85,9 @@ spec:
     - name: sasl-config
       mountPath: /etc/kafka/sasl
       readOnly: true
+    - name: tls-certs
+      mountPath: /etc/kafka/secrets
+      readOnly: true
 
   volumes:
   - name: sshd-config
@@ -78,6 +97,10 @@ spec:
   - name: sasl-config
     hostPath:
       path: PLACEHOLDER_SASL_CONFIG_PATH
+      type: Directory
+  - name: tls-certs
+    hostPath:
+      path: PLACEHOLDER_TLS_CERTS_PATH
       type: Directory
 
 ---
