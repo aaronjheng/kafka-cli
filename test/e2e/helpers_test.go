@@ -97,6 +97,69 @@ func (k *KafkaCLI) RunWithStdin(ctx context.Context, stdin string, args ...strin
 	return stdout.String(), nil
 }
 
+func ProduceAndAssertConsumed(
+	t *testing.T,
+	cli *KafkaCLI,
+	topic string,
+	expectedMessages []string,
+	consumeArgs ...string,
+) {
+	t.Helper()
+
+	messages := strings.Join(expectedMessages, "\n") + "\n"
+
+	consumeCtx, cancelConsume := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancelConsume()
+
+	consumerCmdArgs := make([]string, 0, 5+len(consumeArgs))
+	consumerCmdArgs = append(consumerCmdArgs,
+		"-f", filepath.Join(cli.configDir, "config.yaml"),
+		"topic", "consume", topic,
+	)
+
+	consumerCmdArgs = append(consumerCmdArgs, consumeArgs...)
+
+	//nolint:gosec // test-only: controlled args
+	consumerCmd := exec.CommandContext(consumeCtx, cli.binary, consumerCmdArgs...)
+
+	var consumeStdout bytes.Buffer
+
+	var consumeStderr bytes.Buffer
+
+	consumerCmd.Stdout = &consumeStdout
+	consumerCmd.Stderr = &consumeStderr
+
+	err := consumerCmd.Start()
+	if err != nil {
+		t.Fatalf("start consumer failed: %v", err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	_, err = cli.RunWithStdin(t.Context(), messages, "topic", "produce", topic)
+	if err != nil {
+		t.Fatalf("produce messages failed: %v", err)
+	}
+
+	time.Sleep(2 * time.Second)
+
+	cancelConsume()
+
+	_ = consumerCmd.Wait()
+
+	output := consumeStdout.String()
+	for _, message := range expectedMessages {
+		if !StringsContains(output, message) {
+			t.Fatalf(
+				"expected consumed message %q, got stdout=%q stderr=%q",
+				message,
+				output,
+				consumeStderr.String(),
+			)
+		}
+	}
+}
+
 func UniqueTopicName(t *testing.T) string {
 	t.Helper()
 

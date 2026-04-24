@@ -30,35 +30,72 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Build CLI binary
-        run: go build -o ./kafka ./cmd/kafka
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssh-client podman
 
-      - name: Start Kafka container
-        run: docker compose -f test/e2e/docker-compose.yaml up -d kafka
+      - name: Generate SSH key
+        id: ssh-key
+        run: |
+          mkdir -p /tmp/ssh-test
+          ssh-keygen -t ed25519 -f /tmp/ssh-test/id_ed25519 -N ""
+          echo "key-path=/tmp/ssh-test/id_ed25519" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare k8s manifest
+        run: |
+          sed -i "s|PLACEHOLDER_SSH_PUBLIC_KEY|$(cat /tmp/ssh-test/id_ed25519.pub)|" test/e2e/kafka/pod.yaml
+          sed -i "s|PLACEHOLDER_SSHD_CONFIG_PATH|${{ github.workspace }}/test/e2e/kafka/sshd_config.d|" test/e2e/kafka/pod.yaml
+
+      - name: Start podman pod
+        run: |
+          if [ -f ./kafka ]; then mv ./kafka /tmp/kafka-binary; fi
+          podman kube play --build=false test/e2e/kafka/pod.yaml
+          if [ -f /tmp/kafka-binary ]; then mv /tmp/kafka-binary ./kafka; fi
         timeout-minutes: 5
 
       - name: Wait for Kafka to be ready
         run: |
-          echo "Checking kafka (plaintext)..."
+          echo "Checking kafka..."
           for i in $(seq 1 30); do
-            if docker exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --list 2>/dev/null; then
-              echo "kafka (plaintext) is ready"
+            if podman exec kafka-ssh-kafka-ssh-test /opt/kafka/bin/kafka-topics.sh \
+               --bootstrap-server 127.0.0.1:9092 --list 2>/dev/null; then
+              echo "kafka is ready"
               break
             fi
             echo "  retry $i..."
             sleep 5
           done
 
-          echo "Kafka is ready"
+      - name: Wait for SSH to be ready
+        run: |
+          echo "Checking SSH..."
+          for i in $(seq 1 30); do
+            if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+               -i /tmp/ssh-test/id_ed25519 -p 2222 \
+               kafkauser@127.0.0.1 echo "ready" 2>/dev/null; then
+              echo "SSH is ready"
+              break
+            fi
+            echo "  retry $i..."
+            sleep 3
+          done
 
       - name: Run E2E tests
-        run: go test -v -timeout 300s ./test/e2e/...
+        env:
+          SSH_TEST_KEY_PATH: ${{ steps.ssh-key.outputs.key-path }}
+          KAFKA_CLI_BINARY: ${{ github.workspace }}/kafka
+        run: |
+          go build -o ./kafka ./cmd/kafka
+          go test -v -timeout 300s ./test/e2e/...
 
-      - name: Collect container logs on failure
+      - name: Collect pod logs on failure
         if: failure()
         run: |
-          docker compose -f test/e2e/docker-compose.yaml logs
+          podman logs kafka-ssh-ssh || true
+          podman logs kafka-ssh-kafka-ssh-test || true
 
-      - name: Stop Kafka containers
+      - name: Stop pod
         if: always()
-        run: docker compose -f test/e2e/docker-compose.yaml down -v
+        run: |
+          podman kube down test/e2e/kafka/pod.yaml || true

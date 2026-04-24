@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-ssh
+spec:
+  containers:
+  - name: ssh
+    image: docker.io/linuxserver/openssh-server:latest
+    ports:
+    - containerPort: 2222
+      hostPort: 2222
+    env:
+    - name: PUID
+      value: "1000"
+    - name: PGID
+      value: "1000"
+    - name: TZ
+      value: "UTC"
+    - name: PASSWORD_ACCESS
+      value: "false"
+    - name: USER_NAME
+      value: "kafkauser"
+    - name: PUBLIC_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ssh-secrets
+          key: public-key
+    volumeMounts:
+    - name: sshd-config
+      mountPath: /config/sshd/sshd_config.d
+
+  - name: kafka-ssh-test
+    image: docker.io/apache/kafka:4.2.0
+    ports:
+    - containerPort: 9092
+      hostPort: 9092
+    env:
+    - name: KAFKA_NODE_ID
+      value: "1"
+    - name: KAFKA_PROCESS_ROLES
+      value: "broker,controller"
+    - name: KAFKA_LISTENERS
+      value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+    - name: KAFKA_ADVERTISED_LISTENERS
+      value: "PLAINTEXT://127.0.0.1:9092"
+    - name: KAFKA_CONTROLLER_LISTENER_NAMES
+      value: "CONTROLLER"
+    - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+      value: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+    - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+      value: "1@localhost:9093"
+    - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+      value: "1"
+    - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+      value: "1"
+    - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+      value: "1"
+    - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
+      value: "0"
+
+  volumes:
+  - name: sshd-config
+    hostPath:
+      path: PLACEHOLDER_SSHD_CONFIG_PATH
+      type: Directory
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ssh-secrets
+type: Opaque
+stringData:
+  public-key: "PLACEHOLDER_SSH_PUBLIC_KEY"
