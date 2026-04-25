@@ -44,57 +44,7 @@ jobs:
 
       - name: Generate TLS certificates
         id: tls-certs
-        run: |
-          TLS_DIR=$(mktemp -d)
-          chmod 755 "${TLS_DIR}"
-
-          # Generate CA key and certificate
-          openssl req -new -x509 -keyout "${TLS_DIR}/ca-key" -out "${TLS_DIR}/ca-cert" \
-            -days 365 -passout pass:capass \
-            -subj "/CN=TestCA"
-
-          # Generate server keystore and key
-          keytool -keystore "${TLS_DIR}/kafka.server.keystore.jks" \
-            -alias localhost -keyalg RSA -validity 365 \
-            -storepass keystorepass -keypass keystorepass \
-            -dname "CN=localhost" -genkeypair
-
-          # Create CSR
-          keytool -keystore "${TLS_DIR}/kafka.server.keystore.jks" \
-            -alias localhost -certreq -file "${TLS_DIR}/server-cert-sign-request" \
-            -storepass keystorepass -keypass keystorepass
-
-          # Sign server cert with CA
-          openssl x509 -req -CA "${TLS_DIR}/ca-cert" -CAkey "${TLS_DIR}/ca-key" \
-            -in "${TLS_DIR}/server-cert-sign-request" \
-            -out "${TLS_DIR}/server-cert-signed" \
-            -days 365 -CAcreateserial -passin pass:capass
-
-          # Import CA cert into keystore
-          keytool -keystore "${TLS_DIR}/kafka.server.keystore.jks" \
-            -alias CARoot -importcert -file "${TLS_DIR}/ca-cert" \
-            -storepass keystorepass -noprompt
-
-          # Import signed server cert into keystore
-          keytool -keystore "${TLS_DIR}/kafka.server.keystore.jks" \
-            -alias localhost -importcert -file "${TLS_DIR}/server-cert-signed" \
-            -storepass keystorepass -keypass keystorepass -noprompt
-
-          # Create truststore with CA cert
-          keytool -keystore "${TLS_DIR}/kafka.server.truststore.jks" \
-            -alias CARoot -importcert -file "${TLS_DIR}/ca-cert" \
-            -storepass truststorepass -noprompt
-
-          # Write credential files for apache/kafka image
-          printf "keystorepass" > "${TLS_DIR}/keystore_creds"
-          printf "keystorepass" > "${TLS_DIR}/key_creds"
-          printf "truststorepass" > "${TLS_DIR}/truststore_creds"
-
-          # Export CA cert as PEM for the CLI client
-          cp "${TLS_DIR}/ca-cert" "${TLS_DIR}/ca-cert.pem"
-
-          echo "tls-certs-path=${TLS_DIR}" >> "$GITHUB_OUTPUT"
-          echo "ca-cert-path=${TLS_DIR}/ca-cert.pem" >> "$GITHUB_OUTPUT"
+        run: bash test/e2e/scripts/generate-tls-certs.sh
 
       - name: Prepare k8s manifest
         run: |
@@ -111,31 +61,10 @@ jobs:
         timeout-minutes: 5
 
       - name: Wait for Kafka to be ready
-        run: |
-          echo "Checking kafka..."
-          for i in $(seq 1 30); do
-            if podman exec kafka-ssh-kafka-ssh-test /opt/kafka/bin/kafka-topics.sh \
-               --bootstrap-server 127.0.0.1:9092 --list 2>/dev/null; then
-              echo "kafka is ready"
-              break
-            fi
-            echo "  retry $i..."
-            sleep 5
-          done
+        run: bash test/e2e/scripts/wait-for-kafka.sh
 
       - name: Wait for SSH to be ready
-        run: |
-          echo "Checking SSH..."
-          for i in $(seq 1 30); do
-            if ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-               -i /tmp/ssh-test/id_ed25519 -p 2222 \
-               kafkauser@127.0.0.1 echo "ready" 2>/dev/null; then
-              echo "SSH is ready"
-              break
-            fi
-            echo "  retry $i..."
-            sleep 3
-          done
+        run: bash test/e2e/scripts/wait-for-ssh.sh
 
       - name: Run E2E tests
         env:
