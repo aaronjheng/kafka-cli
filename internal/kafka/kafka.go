@@ -5,9 +5,11 @@ import (
 	"crypto/x509"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/IBM/sarama"
 	kafkago "github.com/segmentio/kafka-go"
+	"github.com/xdg-go/scram"
 
 	"github.com/aaronjheng/kafka-cli/internal/ssh"
 )
@@ -40,6 +42,17 @@ func New(clusterConfig *Config) (*Kafka, error) {
 		saramaCfg.Net.SASL.Mechanism = sarama.SASLMechanism(clusterConfig.SASL.Mechanism)
 		saramaCfg.Net.SASL.User = clusterConfig.SASL.Username
 		saramaCfg.Net.SASL.Password = clusterConfig.SASL.Password
+
+		switch strings.ToUpper(clusterConfig.SASL.Mechanism) {
+		case "SCRAM-SHA-256":
+			saramaCfg.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
+				return newSaramaSCRAMClient(scram.SHA256)
+			}
+		case "SCRAM-SHA-512":
+			saramaCfg.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
+				return newSaramaSCRAMClient(scram.SHA512)
+			}
+		}
 	}
 
 	if clusterConfig.SSH != nil {
