@@ -55,9 +55,7 @@ jobs:
 
       - name: Start podman pod
         run: |
-          if [ -f ./kafka ]; then mv ./kafka /tmp/kafka-binary; fi
           podman kube play --build=false test/e2e/kafka/pod.yaml
-          if [ -f /tmp/kafka-binary ]; then mv /tmp/kafka-binary ./kafka; fi
         timeout-minutes: 5
 
       - name: Wait for Kafka to be ready
