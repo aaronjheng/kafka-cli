@@ -43,15 +43,12 @@ just bump-deps
 - Do not enable the `ireturn` linter; returning interfaces is common in this project.
 - Do not enable deprecated linters.
 
-## Git Workflow Rules
+## Git Workflow
 
-- NEVER run `git commit`, `git push`, or any other git mutations unless explicitly instructed
-- Always ask for confirmation before committing changes
-- Always ask for confirmation before pushing to remote
-
-## Commit Message Guidelines
-
-- Use a single sentence
-- Do not use Conventional Commits (e.g., no `feat:`, `fix:` prefixes)
-- Capitalize the first letter
-- Example: "Add delete menu to connection list"
+- Never run `git commit`, `git push`, or other git mutations unless explicitly instructed
+- If explicitly instructed to commit or push, execute directly without extra confirmation
+- Commit message rules:
+  - One sentence only
+  - No Conventional Commit prefixes
+  - Capitalize the first letter
+  - Example: "Add delete menu to connection list"
