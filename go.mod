@@ -6,7 +6,6 @@ require (
 	github.com/IBM/sarama v1.48.0
 	github.com/adrg/xdg v0.5.3
 	github.com/olekukonko/tablewriter v1.1.4
-	github.com/segmentio/kafka-go v0.4.51
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/xdg-go/scram v1.2.0

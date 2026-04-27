@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"sync"
 
-	kafkago "github.com/segmentio/kafka-go"
+	"github.com/IBM/sarama"
 	"github.com/spf13/cobra"
 
 	"github.com/aaronjheng/kafka-cli/internal/kafka"
@@ -248,15 +248,15 @@ func topicProduceCmd() *cobra.Command {
 
 			topic := args[0]
 
-			writer, err := kafka.NewWriter(clusterCfg, topic)
+			producer, err := kafka.NewSyncProducer(clusterCfg)
 			if err != nil {
-				return fmt.Errorf("kafka.NewWriter error: %w", err)
+				return fmt.Errorf("kafka.NewSyncProducer error: %w", err)
 			}
 
 			defer func() {
-				err := writer.Close()
+				err := producer.Close()
 				if err != nil {
-					slog.Error("writer.Close failed", slog.Any("error", err))
+					slog.Error("producer.Close failed", slog.Any("error", err))
 				}
 			}()
 
@@ -268,11 +268,12 @@ func topicProduceCmd() *cobra.Command {
 					continue
 				}
 
-				err := writer.WriteMessages(context.Background(), kafkago.Message{
-					Value: []byte(line),
+				_, _, err := producer.SendMessage(&sarama.ProducerMessage{
+					Topic: topic,
+					Value: sarama.StringEncoder(line),
 				})
 				if err != nil {
-					slog.Error("writer.WriteMessages failed", slog.Any("error", err))
+					slog.Error("producer.SendMessage failed", slog.Any("error", err))
 				}
 			}
 
@@ -327,7 +328,7 @@ func readPartitionMessages(
 	partition int32,
 	msgCh chan<- consumerMessage,
 ) {
-	reader, err := kafka.NewPartitionReader(clusterCfg, topic, partition)
+	reader, err := kafka.NewPartitionReader(clusterCfg, topic, partition, sarama.OffsetNewest)
 	if err != nil {
 		slog.Error("kafka.NewPartitionReader failed", slog.Any("error", err))
 
@@ -340,13 +341,6 @@ func readPartitionMessages(
 			slog.Error("reader.Close failed", slog.Any("error", err))
 		}
 	}()
-
-	err = reader.SetOffset(kafkago.LastOffset)
-	if err != nil {
-		slog.Error("reader.SetOffset failed", slog.Any("error", err))
-
-		return
-	}
 
 	for {
 		msg, err := reader.ReadMessage(ctx)
@@ -361,7 +355,7 @@ func readPartitionMessages(
 		}
 
 		msgCh <- consumerMessage{
-			partition: msg.Partition,
+			partition: int(msg.Partition),
 			value:     string(msg.Value),
 		}
 	}

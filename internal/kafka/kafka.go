@@ -1,14 +1,16 @@
 package kafka
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
 	"github.com/IBM/sarama"
-	kafkago "github.com/segmentio/kafka-go"
 	"github.com/xdg-go/scram"
 
 	"github.com/aaronjheng/kafka-cli/internal/ssh"
@@ -18,7 +20,7 @@ type Kafka struct {
 	sarama.Client
 }
 
-func New(clusterConfig *Config) (*Kafka, error) {
+func newSaramaConfig(clusterConfig *Config) (*sarama.Config, error) {
 	saramaCfg := sarama.NewConfig()
 	if clusterConfig.TLS != nil {
 		saramaCfg.Net.TLS.Enable = true
@@ -65,6 +67,15 @@ func New(clusterConfig *Config) (*Kafka, error) {
 		saramaCfg.Net.Proxy.Dialer = dialer
 	}
 
+	return saramaCfg, nil
+}
+
+func New(clusterConfig *Config) (*Kafka, error) {
+	saramaCfg, err := newSaramaConfig(clusterConfig)
+	if err != nil {
+		return nil, fmt.Errorf("newSaramaConfig error: %w", err)
+	}
+
 	client, err := sarama.NewClient(clusterConfig.Brokers, saramaCfg)
 	if err != nil {
 		return nil, fmt.Errorf("sarama.NewClient error: %w", err)
@@ -75,29 +86,84 @@ func New(clusterConfig *Config) (*Kafka, error) {
 	}, nil
 }
 
-func NewWriter(cfg *Config, topic string) (*kafkago.Writer, error) {
-	transport, err := NewTransport(cfg)
+func NewSyncProducer(cfg *Config) (sarama.SyncProducer, error) {
+	saramaCfg, err := newSaramaConfig(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("NewTransport error: %w", err)
+		return nil, fmt.Errorf("newSaramaConfig error: %w", err)
 	}
 
-	return &kafkago.Writer{
-		Addr:      kafkago.TCP(cfg.Brokers...),
-		Topic:     topic,
-		Transport: transport,
+	saramaCfg.Producer.Return.Successes = true
+
+	producer, err := sarama.NewSyncProducer(cfg.Brokers, saramaCfg)
+	if err != nil {
+		return nil, fmt.Errorf("sarama.NewSyncProducer error: %w", err)
+	}
+
+	return producer, nil
+}
+
+type PartitionReader struct {
+	consumer          sarama.Consumer
+	partitionConsumer sarama.PartitionConsumer
+}
+
+func NewPartitionReader(cfg *Config, topic string, partition int32, offset int64) (*PartitionReader, error) {
+	saramaCfg, err := newSaramaConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("newSaramaConfig error: %w", err)
+	}
+
+	saramaCfg.Consumer.Return.Errors = true
+
+	consumer, err := sarama.NewConsumer(cfg.Brokers, saramaCfg)
+	if err != nil {
+		return nil, fmt.Errorf("sarama.NewConsumer error: %w", err)
+	}
+
+	partitionConsumer, err := consumer.ConsumePartition(topic, partition, offset)
+	if err != nil {
+		_ = consumer.Close()
+
+		return nil, fmt.Errorf("consumer.ConsumePartition error: %w", err)
+	}
+
+	return &PartitionReader{
+		consumer:          consumer,
+		partitionConsumer: partitionConsumer,
 	}, nil
 }
 
-func NewPartitionReader(cfg *Config, topic string, partition int32) (*kafkago.Reader, error) {
-	dialer, err := NewDialer(cfg)
+func (r *PartitionReader) ReadMessage(ctx context.Context) (*sarama.ConsumerMessage, error) {
+	select {
+	case msg, ok := <-r.partitionConsumer.Messages():
+		if !ok {
+			return nil, io.EOF
+		}
+
+		return msg, nil
+	case err, ok := <-r.partitionConsumer.Errors():
+		if !ok {
+			return nil, io.EOF
+		}
+
+		return nil, err.Err
+	case <-ctx.Done():
+		return nil, fmt.Errorf("context error: %w", ctx.Err())
+	}
+}
+
+func (r *PartitionReader) Close() error {
+	var errs []error
+
+	err := r.partitionConsumer.Close()
 	if err != nil {
-		return nil, fmt.Errorf("NewDialer error: %w", err)
+		errs = append(errs, err)
 	}
 
-	return kafkago.NewReader(kafkago.ReaderConfig{
-		Brokers:   cfg.Brokers,
-		Topic:     topic,
-		Partition: int(partition),
-		Dialer:    dialer,
-	}), nil
+	err = r.consumer.Close()
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	return errors.Join(errs...)
 }
