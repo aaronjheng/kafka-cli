@@ -15,8 +15,15 @@ import (
 //go:embed VERSION
 var embeddedVersion string
 
-var version = strings.TrimRight(embeddedVersion, "\n")
-var pseudoVersionCommitRegex = regexp.MustCompile(`-[0-9]{14}-([0-9a-f]{12,40})$`)
+const (
+	splitNParts         = 2
+	expectedMatchGroups = 2
+)
+
+var (
+	version                  = strings.TrimRight(embeddedVersion, "\n")
+	pseudoVersionCommitRegex = regexp.MustCompile(`-[0-9]{14}-([0-9a-f]{12,40})$`)
+)
 
 func buildCommit() string {
 	buildInfo, ok := debug.ReadBuildInfo()
@@ -30,9 +37,10 @@ func buildCommit() string {
 		}
 	}
 
-	moduleVersion := strings.SplitN(buildInfo.Main.Version, "+", 2)[0]
+	moduleVersion := strings.SplitN(buildInfo.Main.Version, "+", splitNParts)[0]
+
 	matches := pseudoVersionCommitRegex.FindStringSubmatch(moduleVersion)
-	if len(matches) == 2 {
+	if len(matches) == expectedMatchGroups {
 		return matches[1]
 	}
 
