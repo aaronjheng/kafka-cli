@@ -10,6 +10,12 @@ A lightweight command-line tool for managing Apache Kafka clusters. It supports 
 go install github.com/aaronjheng/kafka-cli/cmd/kafka@latest
 ```
 
+If you need the newest `master` commit immediately (without relying on branch-resolution cache), install by resolved commit SHA:
+
+```shell
+go install github.com/aaronjheng/kafka-cli/cmd/kafka@$(git ls-remote https://github.com/aaronjheng/kafka-cli.git refs/heads/master | cut -f1)
+```
+
 ## Configuration
 
 See [config.example.yaml](contrib/config.example.yaml) for reference.

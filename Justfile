@@ -11,4 +11,4 @@ lint-with-fix:
     golangci-lint run --verbose --allow-parallel-runners --fix ./...
 
 install:
-    go install github.com/aaronjheng/kafka-cli/cmd/kafka@master
+    go install github.com/aaronjheng/kafka-cli/cmd/kafka@$(git ls-remote https://github.com/aaronjheng/kafka-cli.git refs/heads/master | cut -f1)
