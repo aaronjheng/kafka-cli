@@ -294,3 +294,17 @@ func assertClusterDescribeOutput(t *testing.T, output string) {
 		t.Errorf("expected 'Topics:' in output, got: %s", output)
 	}
 }
+
+func TestGroupResetOffsets_SASL(t *testing.T) {
+	t.Parallel()
+
+	for name, mechConfig := range saslMechanisms {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cli := newSASLCLI(t, mechConfig)
+
+			testGroupResetOffsets(t, cli, saslTestBroker, mechConfig.mechanism, mechConfig.username, mechConfig.password)
+		})
+	}
+}

@@ -12,6 +12,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	kafkago "github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go/sasl/plain"
+	"github.com/segmentio/kafka-go/sasl/scram"
 )
 
 const (
@@ -215,4 +219,97 @@ func ExtractPartitionCount(output string) string {
 
 func StringsContains(s, substr string) bool {
 	return strings.Contains(s, substr)
+}
+
+func newKafkaGoClient(addr, saslMechanism, username, password string) (*kafkago.Client, error) {
+	transport := &kafkago.Transport{}
+
+	if saslMechanism != "" {
+		switch saslMechanism {
+		case "PLAIN":
+			transport.SASL = plain.Mechanism{Username: username, Password: password}
+		case "SCRAM-SHA-256":
+			m, err := scram.Mechanism(scram.SHA256, username, password)
+			if err != nil {
+				return nil, fmt.Errorf("scram.Mechanism error: %w", err)
+			}
+
+			transport.SASL = m
+		case "SCRAM-SHA-512":
+			m, err := scram.Mechanism(scram.SHA512, username, password)
+			if err != nil {
+				return nil, fmt.Errorf("scram.Mechanism error: %w", err)
+			}
+
+			transport.SASL = m
+		}
+	}
+
+	return &kafkago.Client{
+		Addr:      kafkago.TCP(addr),
+		Transport: transport,
+	}, nil
+}
+
+func setGroupOffset(t *testing.T, client *kafkago.Client, group, topic string, partition int, offset int64) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	coordResp, err := client.FindCoordinator(ctx, &kafkago.FindCoordinatorRequest{
+		Addr:    client.Addr,
+		Key:     group,
+		KeyType: kafkago.CoordinatorKeyTypeConsumer,
+	})
+	if err != nil {
+		t.Fatalf("failed to find coordinator: %v", err)
+	}
+
+	coordAddr := kafkago.TCP(fmt.Sprintf("%s:%d", coordResp.Coordinator.Host, coordResp.Coordinator.Port))
+
+	_, err = client.OffsetCommit(ctx, &kafkago.OffsetCommitRequest{
+		Addr:    coordAddr,
+		GroupID: group,
+		Topics: map[string][]kafkago.OffsetCommit{
+			topic: {{Partition: partition, Offset: offset}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to commit offset: %v", err)
+	}
+}
+
+func fetchGroupOffset(t *testing.T, client *kafkago.Client, group, topic string, partition int) int64 {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	coordResp, err := client.FindCoordinator(ctx, &kafkago.FindCoordinatorRequest{
+		Addr:    client.Addr,
+		Key:     group,
+		KeyType: kafkago.CoordinatorKeyTypeConsumer,
+	})
+	if err != nil {
+		t.Fatalf("failed to find coordinator: %v", err)
+	}
+
+	coordAddr := kafkago.TCP(fmt.Sprintf("%s:%d", coordResp.Coordinator.Host, coordResp.Coordinator.Port))
+
+	resp, err := client.OffsetFetch(ctx, &kafkago.OffsetFetchRequest{
+		Addr:    coordAddr,
+		GroupID: group,
+		Topics:  map[string][]int{topic: {partition}},
+	})
+	if err != nil {
+		t.Fatalf("failed to fetch offset: %v", err)
+	}
+
+	partitions, ok := resp.Topics[topic]
+	if !ok || len(partitions) == 0 {
+		t.Fatalf("no offset for topic %s", topic)
+	}
+
+	return partitions[0].CommittedOffset
 }

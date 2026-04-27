@@ -102,7 +102,18 @@ func provideAdmin() (*admin.Admin, func(context.Context) error, error) {
 		return nil, nil, fmt.Errorf("newClusterAdmin error: %w", err)
 	}
 
-	return admin.NewAdmin(clusterAdmin), func(_ context.Context) error {
-		return clusterAdmin.Close()
+	return admin.NewAdmin(clusterAdmin, cluster), func(_ context.Context) error {
+		err1 := clusterAdmin.Close()
+		err2 := cluster.Close()
+
+		if err1 != nil {
+			return fmt.Errorf("clusterAdmin.Close error: %w", err1)
+		}
+
+		if err2 != nil {
+			return fmt.Errorf("client.Close error: %w", err2)
+		}
+
+		return nil
 	}, nil
 }

@@ -68,3 +68,58 @@ func (a *Admin) DeleteConsumerGroups(groups ...string) error {
 
 	return nil
 }
+
+func (a *Admin) ResetConsumerGroupOffsets(
+	group string,
+	topics []string,
+	toEarliest, toLatest bool,
+	toOffset int64,
+) error {
+	offsetManager, err := sarama.NewOffsetManagerFromClient(group, a.client)
+	if err != nil {
+		return fmt.Errorf("sarama.NewOffsetManagerFromClient error: %w", err)
+	}
+	defer offsetManager.Close()
+
+	for _, topic := range topics {
+		partitions, err := a.client.Partitions(topic)
+		if err != nil {
+			return fmt.Errorf("client.Partitions error: %w", err)
+		}
+
+		for _, partition := range partitions {
+			pom, err := offsetManager.ManagePartition(topic, partition)
+			if err != nil {
+				return fmt.Errorf("offsetManager.ManagePartition error: %w", err)
+			}
+
+			var targetOffset int64
+
+			switch {
+			case toEarliest:
+				targetOffset, err = a.client.GetOffset(topic, partition, sarama.OffsetOldest)
+			case toLatest:
+				targetOffset, err = a.client.GetOffset(topic, partition, sarama.OffsetNewest)
+			default:
+				targetOffset = toOffset
+			}
+
+			if err != nil {
+				return fmt.Errorf("client.GetOffset error: %w", err)
+			}
+
+			pom.ResetOffset(targetOffset, "")
+
+			slog.Info("Reset offset",
+				slog.String("group", group),
+				slog.String("topic", topic),
+				slog.Int("partition", int(partition)),
+				slog.Int64("offset", targetOffset),
+			)
+		}
+	}
+
+	offsetManager.Commit()
+
+	return nil
+}
