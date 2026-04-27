@@ -40,6 +40,8 @@ func rootCmd() *cobra.Command {
 		},
 	}
 
+	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
+
 	cmd.PersistentFlags().StringVarP(&cluster, "cluster", "c", "", "Cluster name to operate.")
 	cmd.PersistentFlags().StringP("config", "f", "", "Config file path.")
 
