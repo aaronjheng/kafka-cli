@@ -46,7 +46,7 @@ func NewKafkaCLI(t *testing.T) *KafkaCLI {
 func (k *KafkaCLI) WriteConfig(t *testing.T, content string) {
 	t.Helper()
 
-	cfgPath := filepath.Join(k.configDir, "config.yaml")
+	cfgPath := filepath.Join(k.configDir, "kafka.yaml")
 
 	err := os.WriteFile(cfgPath, []byte(content), 0o600)
 	if err != nil {
@@ -55,7 +55,7 @@ func (k *KafkaCLI) WriteConfig(t *testing.T, content string) {
 }
 
 func (k *KafkaCLI) Run(ctx context.Context, args ...string) (string, error) {
-	allArgs := append([]string{"-f", filepath.Join(k.configDir, "config.yaml")}, args...)
+	allArgs := append([]string{"-f", filepath.Join(k.configDir, "kafka.yaml")}, args...)
 
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -76,7 +76,7 @@ func (k *KafkaCLI) Run(ctx context.Context, args ...string) (string, error) {
 }
 
 func (k *KafkaCLI) RunWithStdin(ctx context.Context, stdin string, args ...string) (string, error) {
-	allArgs := append([]string{"-f", filepath.Join(k.configDir, "config.yaml")}, args...)
+	allArgs := append([]string{"-f", filepath.Join(k.configDir, "kafka.yaml")}, args...)
 
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
@@ -113,7 +113,7 @@ func ProduceAndAssertConsumed(
 
 	consumerCmdArgs := make([]string, 0, 5+len(consumeArgs))
 	consumerCmdArgs = append(consumerCmdArgs,
-		"-f", filepath.Join(cli.configDir, "config.yaml"),
+		"-f", filepath.Join(cli.configDir, "kafka.yaml"),
 		"topic", "consume", topic,
 	)
 

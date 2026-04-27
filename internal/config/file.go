@@ -36,7 +36,7 @@ func LoadConfig(cfgFilepath string) (*Config, error) {
 	if cfgFilepath != "" {
 		viper.SetConfigFile(cfgFilepath)
 	} else {
-		viper.SetConfigName("config")
+		viper.SetConfigName("kafka")
 		viper.SetConfigType("yaml")
 		viper.AddConfigPath(".")
 		viper.AddConfigPath(cfgRoot)

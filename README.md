@@ -18,7 +18,7 @@ go install github.com/aaronjheng/kafka-cli/cmd/kafka@$(git ls-remote https://git
 
 ## Configuration
 
-See [config.example.yaml](contrib/config.example.yaml) for reference.
+See [kafka.example.yaml](contrib/kafka.example.yaml) for reference.
 
 ### Config Fields
 
@@ -63,10 +63,10 @@ Each cluster supports the following fields:
 ### Config File Search Order
 
 1. Path specified by `--config` / `-f` flag
-2. `./config.yaml` (current directory)
-3. `$XDG_CONFIG_HOME/kafka/config.yaml`
-   - Linux: `~/.config/kafka/config.yaml`
-   - macOS: `~/Library/Application Support/kafka/config.yaml`
+2. `./kafka.yaml` (current directory)
+3. `$XDG_CONFIG_HOME/kafka/kafka.yaml`
+   - Linux: `~/.config/kafka/kafka.yaml`
+   - macOS: `~/Library/Application Support/kafka/kafka.yaml`
 
 If no config file is found, a default configuration is used with a `default` cluster pointing to `127.0.0.1:9092`.
 

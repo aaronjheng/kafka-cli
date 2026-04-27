@@ -1,7 +1,7 @@
 .DS_store
 
-config.yaml
-config.yml
+kafka.yaml
+kafka.yml
 
 test/e2e/certs/
 test/e2e/ssh_key
