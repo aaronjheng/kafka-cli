@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/IBM/sarama"
@@ -234,54 +235,74 @@ func topicConsumeCmd() *cobra.Command {
 	return cmd
 }
 
+const keyValueParts = 2
+
 func topicProduceCmd() *cobra.Command {
+	var keySeparator string
+
 	cmd := &cobra.Command{
 		Use:               "produce TOPIC",
 		Short:             "Produce messages to a topic",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: topicCompletionFunc,
 		RunE: func(_ *cobra.Command, args []string) error {
-			clusterCfg, err := clusterConfig()
-			if err != nil {
-				return fmt.Errorf("clusterConfig error: %w", err)
-			}
-
-			topic := args[0]
-
-			producer, err := kafka.NewSyncProducer(clusterCfg)
-			if err != nil {
-				return fmt.Errorf("kafka.NewSyncProducer error: %w", err)
-			}
-
-			defer func() {
-				err := producer.Close()
-				if err != nil {
-					slog.Error("producer.Close failed", slog.Any("error", err))
-				}
-			}()
-
-			scanner := bufio.NewScanner(os.Stdin)
-			for scanner.Scan() {
-				line := scanner.Text()
-
-				if line == "" {
-					continue
-				}
-
-				_, _, err := producer.SendMessage(&sarama.ProducerMessage{
-					Topic: topic,
-					Value: sarama.StringEncoder(line),
-				})
-				if err != nil {
-					slog.Error("producer.SendMessage failed", slog.Any("error", err))
-				}
-			}
-
-			return nil
+			return runTopicProduce(args, keySeparator)
 		},
 	}
 
+	cmd.Flags().StringVar(&keySeparator, "key-separator", "", "Separator to split key from value")
+
 	return cmd
+}
+
+func runTopicProduce(args []string, keySeparator string) error {
+	clusterCfg, err := clusterConfig()
+	if err != nil {
+		return fmt.Errorf("clusterConfig error: %w", err)
+	}
+
+	topic := args[0]
+
+	producer, err := kafka.NewSyncProducer(clusterCfg)
+	if err != nil {
+		return fmt.Errorf("kafka.NewSyncProducer error: %w", err)
+	}
+
+	defer func() {
+		err := producer.Close()
+		if err != nil {
+			slog.Error("producer.Close failed", slog.Any("error", err))
+		}
+	}()
+
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if line == "" {
+			continue
+		}
+
+		msg := &sarama.ProducerMessage{
+			Topic: topic,
+			Value: sarama.StringEncoder(line),
+		}
+
+		if keySeparator != "" {
+			parts := strings.SplitN(line, keySeparator, keyValueParts)
+			if len(parts) == keyValueParts {
+				msg.Key = sarama.StringEncoder(parts[0])
+				msg.Value = sarama.StringEncoder(parts[1])
+			}
+		}
+
+		_, _, err := producer.SendMessage(msg)
+		if err != nil {
+			slog.Error("producer.SendMessage failed", slog.Any("error", err))
+		}
+	}
+
+	return nil
 }
 
 func calculatePartitionWidth(partitions []int32) int {
