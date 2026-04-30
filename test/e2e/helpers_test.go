@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/IBM/sarama"
 )
 
 const (
@@ -164,6 +166,130 @@ func UniqueTopicName(t *testing.T) string {
 	t.Helper()
 
 	return fmt.Sprintf("e2e-test-%s-%d", strings.ReplaceAll(t.Name(), "/", "-"), time.Now().UnixMilli())
+}
+
+func UniqueGroupName(t *testing.T) string {
+	t.Helper()
+
+	return fmt.Sprintf("e2e-group-%s-%d", strings.ReplaceAll(t.Name(), "/", "-"), time.Now().UnixMilli())
+}
+
+func ProduceAndConsumeWithGroup(
+	t *testing.T,
+	cli *KafkaCLI,
+	topic string,
+	group string,
+	messages []string,
+) {
+	t.Helper()
+
+	msgs := strings.Join(messages, "\n") + "\n"
+
+	_, err := cli.RunWithStdin(t.Context(), msgs, "topic", "produce", topic)
+	if err != nil {
+		t.Fatalf("produce messages failed: %v", err)
+	}
+
+	brokers := brokersFromConfig(t, cli)
+
+	config := sarama.NewConfig()
+	config.Consumer.Return.Errors = true
+	config.Consumer.Offsets.Initial = sarama.OffsetOldest
+
+	client, err := sarama.NewConsumerGroup(brokers, group, config)
+	if err != nil {
+		t.Fatalf("create consumer group failed: %v", err)
+	}
+
+	defer func() {
+		_ = client.Close()
+	}()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
+	defer cancel()
+
+	handler := &consumeGroupHandler{
+		expected: len(messages),
+		consumed: 0,
+		done:     make(chan struct{}),
+	}
+
+	go consumeGroupErrors(ctx, client)
+	go consumeGroupLoop(ctx, client, topic, handler)
+
+	select {
+	case <-handler.done:
+	case <-ctx.Done():
+		t.Fatal("timed out waiting for consumer group to consume messages")
+	}
+}
+
+func consumeGroupErrors(ctx context.Context, client sarama.ConsumerGroup) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-client.Errors():
+		}
+	}
+}
+
+func consumeGroupLoop(ctx context.Context, client sarama.ConsumerGroup, topic string, handler *consumeGroupHandler) {
+	for {
+		err := client.Consume(ctx, []string{topic}, handler)
+		if err != nil {
+			return
+		}
+
+		if ctx.Err() != nil {
+			return
+		}
+	}
+}
+
+type consumeGroupHandler struct {
+	expected int
+	consumed int
+	done     chan struct{}
+}
+
+func (h *consumeGroupHandler) Setup(sarama.ConsumerGroupSession) error   { return nil }
+func (h *consumeGroupHandler) Cleanup(sarama.ConsumerGroupSession) error { return nil }
+func (h *consumeGroupHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	for msg := range claim.Messages() {
+		sess.MarkMessage(msg, "")
+		sess.Commit()
+
+		h.consumed++
+
+		if h.consumed >= h.expected {
+			close(h.done)
+
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func brokersFromConfig(t *testing.T, cli *KafkaCLI) []string {
+	t.Helper()
+
+	data, err := os.ReadFile(filepath.Join(cli.configDir, "kafka.yaml"))
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+
+	for line := range strings.SplitSeq(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if broker, ok := strings.CutPrefix(trimmed, "- "); ok && strings.Contains(broker, ":") {
+			return []string{broker}
+		}
+	}
+
+	t.Fatal("no brokers found in config")
+
+	return nil
 }
 
 func WaitForKafka(t *testing.T, cli *KafkaCLI) {
