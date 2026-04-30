@@ -16,14 +16,7 @@ func (a *Admin) DescribeCluster() error {
 		return fmt.Errorf("clusterAdmin.DescribeCluster error: %w", err)
 	}
 
-	topics, err := a.clusterAdmin.ListTopics()
-	if err != nil {
-		return fmt.Errorf("clusterAdmin.ListTopics error: %w", err)
-	}
-
-	fmt.Fprintf(os.Stdout, "Brokers: %d\n", len(brokers))
-	fmt.Fprintf(os.Stdout, "Topics: %d\n", len(topics))
-	fmt.Fprintln(os.Stdout)
+	fmt.Fprintln(os.Stdout, "Brokers")
 
 	return renderBrokerTable(brokers, controllerID)
 }
