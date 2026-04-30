@@ -21,17 +21,16 @@ func (a *Admin) DescribeCluster() error {
 		return fmt.Errorf("clusterAdmin.ListTopics error: %w", err)
 	}
 
-	fmt.Fprintf(os.Stdout, "Controller ID: %d\n", controllerID)
 	fmt.Fprintf(os.Stdout, "Brokers: %d\n", len(brokers))
 	fmt.Fprintf(os.Stdout, "Topics: %d\n", len(topics))
 	fmt.Fprintln(os.Stdout)
 
-	return renderBrokerTable(brokers)
+	return renderBrokerTable(brokers, controllerID)
 }
 
-func renderBrokerTable(brokers []*sarama.Broker) error {
+func renderBrokerTable(brokers []*sarama.Broker, controllerID int32) error {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.Header([]any{"Broker ID", "Address", "Rack"})
+	table.Header([]any{"ID", "Address", "Rack", "Type"})
 
 	slices.SortStableFunc(brokers, func(a, b *sarama.Broker) int {
 		return cmp.Compare(a.ID(), b.ID())
@@ -43,7 +42,12 @@ func renderBrokerTable(brokers []*sarama.Broker) error {
 			rack = "-"
 		}
 
-		err := table.Append([]any{broker.ID(), broker.Addr(), rack})
+		brokerType := "broker"
+		if broker.ID() == controllerID {
+			brokerType = "controller"
+		}
+
+		err := table.Append([]any{broker.ID(), broker.Addr(), rack, brokerType})
 		if err != nil {
 			return fmt.Errorf("table.Append error: %w", err)
 		}
