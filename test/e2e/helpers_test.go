@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -204,9 +203,14 @@ func TopicExistsInOutput(output, topic string) bool {
 }
 
 func ExtractPartitionCount(output string) string {
-	re := regexp.MustCompile(`(?m)^\s*\d+\s*\|`)
+	re := regexp.MustCompile(`Partitions:\s*(\d+)`)
 
-	return strconv.Itoa(len(re.FindAllString(output, -1)))
+	matches := re.FindStringSubmatch(output)
+	if len(matches) >= 2 {
+		return matches[1]
+	}
+
+	return ""
 }
 
 func StringsContains(s, substr string) bool {

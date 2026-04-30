@@ -101,6 +101,7 @@ func (a *Admin) DescribeTopic(topic string) error {
 	size := a.getTopicSize(topic)
 
 	fmt.Fprintf(os.Stdout, "Topic: %s\n", topic)
+	fmt.Fprintf(os.Stdout, "Partitions: %d\n", detail.NumPartitions)
 	fmt.Fprintf(os.Stdout, "Replication Factor: %d\n", detail.ReplicationFactor)
 	fmt.Fprintf(os.Stdout, "Cleanup Policy: %s\n", cleanupPolicy)
 	fmt.Fprintf(os.Stdout, "Size: %s\n", size)
