@@ -140,3 +140,171 @@ clusters:
 		t.Fatalf("list consumer groups failed: %v", err)
 	}
 }
+
+func TestTopicGetOffsets_PlainText(t *testing.T) {
+	t.Parallel()
+
+	cli := NewKafkaCLI(t)
+	cli.WriteConfig(t, `
+default_cluster: local
+
+clusters:
+  local:
+    brokers:
+      - 127.0.0.1:9092
+`)
+
+	WaitForKafka(t, cli)
+
+	topic := UniqueTopicName(t)
+
+	_, err := cli.Run(t.Context(), "topic", "create", topic, "--partitions", "3", "--replication-factor", "1")
+	if err != nil {
+		t.Fatalf("create topic failed: %v", err)
+	}
+
+	t.Cleanup(func() {
+		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
+	})
+
+	output, err := cli.Run(t.Context(), "topic", "get-offsets", topic)
+	if err != nil {
+		t.Fatalf("get-offsets failed: %v", err)
+	}
+
+	if !StringsContains(output, "PARTITION") {
+		t.Errorf("expected 'PARTITION' in output, got: %s", output)
+	}
+
+	if !StringsContains(output, "OLDEST OFFSET") {
+		t.Errorf("expected 'OLDEST OFFSET' in output, got: %s", output)
+	}
+
+	if !StringsContains(output, "NEWEST OFFSET") {
+		t.Errorf("expected 'NEWEST OFFSET' in output, got: %s", output)
+	}
+}
+
+func TestTopicAlter_PlainText(t *testing.T) {
+	t.Parallel()
+
+	cli := NewKafkaCLI(t)
+	cli.WriteConfig(t, `
+default_cluster: local
+
+clusters:
+  local:
+    brokers:
+      - 127.0.0.1:9092
+`)
+
+	WaitForKafka(t, cli)
+
+	topic := UniqueTopicName(t)
+
+	_, err := cli.Run(t.Context(), "topic", "create", topic, "--partitions", "3", "--replication-factor", "1")
+	if err != nil {
+		t.Fatalf("create topic failed: %v", err)
+	}
+
+	t.Cleanup(func() {
+		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
+	})
+
+	_, err = cli.Run(t.Context(), "topic", "alter", topic, "--partitions", "5")
+	if err != nil {
+		t.Fatalf("alter topic failed: %v", err)
+	}
+
+	describeOutput, err := cli.Run(t.Context(), "topic", "describe", topic)
+	if err != nil {
+		t.Fatalf("describe topic after alter failed: %v", err)
+	}
+
+	partitions := ExtractPartitionCount(describeOutput)
+	if partitions != "5" {
+		t.Errorf("expected 5 partitions after alter, got %q in output: %s", partitions, describeOutput)
+	}
+}
+
+func TestGroupDescribe_PlainText(t *testing.T) {
+	t.Parallel()
+
+	cli := NewKafkaCLI(t)
+	cli.WriteConfig(t, `
+default_cluster: local
+
+clusters:
+  local:
+    brokers:
+      - 127.0.0.1:9092
+`)
+
+	WaitForKafka(t, cli)
+
+	topic := UniqueTopicName(t)
+	group := UniqueGroupName(t)
+
+	_, err := cli.Run(t.Context(), "topic", "create", topic, "--partitions", "1", "--replication-factor", "1")
+	if err != nil {
+		t.Fatalf("create topic failed: %v", err)
+	}
+
+	t.Cleanup(func() {
+		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
+	})
+
+	ProduceAndConsumeWithGroup(t, cli, topic, group, []string{"hello-group-describe"})
+
+	output, err := cli.Run(t.Context(), "group", "describe", group)
+	if err != nil {
+		t.Fatalf("group describe failed: %v", err)
+	}
+
+	if !StringsContains(output, "Consumer Group:") {
+		t.Errorf("expected 'Consumer Group:' in output, got: %s", output)
+	}
+
+	if !StringsContains(output, "State:") {
+		t.Errorf("expected 'State:' in output, got: %s", output)
+	}
+
+	if !StringsContains(output, "Offsets") {
+		t.Errorf("expected 'Offsets' in output, got: %s", output)
+	}
+}
+
+func TestGroupDelete_PlainText(t *testing.T) {
+	t.Parallel()
+
+	cli := NewKafkaCLI(t)
+	cli.WriteConfig(t, `
+default_cluster: local
+
+clusters:
+  local:
+    brokers:
+      - 127.0.0.1:9092
+`)
+
+	WaitForKafka(t, cli)
+
+	topic := UniqueTopicName(t)
+	group := UniqueGroupName(t)
+
+	_, err := cli.Run(t.Context(), "topic", "create", topic, "--partitions", "1", "--replication-factor", "1")
+	if err != nil {
+		t.Fatalf("create topic failed: %v", err)
+	}
+
+	t.Cleanup(func() {
+		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
+	})
+
+	ProduceAndConsumeWithGroup(t, cli, topic, group, []string{"hello-group-delete"})
+
+	_, err = cli.Run(t.Context(), "group", "delete", group)
+	if err != nil {
+		t.Fatalf("group delete failed: %v", err)
+	}
+}
