@@ -115,6 +115,10 @@ func (a *Admin) renderPartitionTable(partitions []*sarama.PartitionMetadata) err
 	table := tablewriter.NewWriter(os.Stdout)
 	table.Header([]any{"Partition", "Leader", "Replicas", "ISR"})
 
+	slices.SortStableFunc(partitions, func(a, b *sarama.PartitionMetadata) int {
+		return cmp.Compare(a.ID, b.ID)
+	})
+
 	for _, partition := range partitions {
 		err := table.Append([]any{
 			partition.ID,
