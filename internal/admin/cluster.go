@@ -2,6 +2,7 @@ package admin
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -10,12 +11,40 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+var errClusterIDNotAvailable = errors.New("cluster ID not available")
+
+func (a *Admin) clusterID() (string, error) {
+	broker, err := a.client.Controller()
+	if err != nil {
+		return "", fmt.Errorf("client.Controller error: %w", err)
+	}
+
+	request := sarama.NewMetadataRequest(a.client.Config().Version, nil)
+
+	response, err := broker.GetMetadata(request)
+	if err != nil {
+		return "", fmt.Errorf("broker.GetMetadata error: %w", err)
+	}
+
+	if response.ClusterID == nil {
+		return "", errClusterIDNotAvailable
+	}
+
+	return *response.ClusterID, nil
+}
+
 func (a *Admin) DescribeCluster() error {
+	clusterID, err := a.clusterID()
+	if err != nil {
+		return fmt.Errorf("clusterID error: %w", err)
+	}
+
 	brokers, controllerID, err := a.clusterAdmin.DescribeCluster()
 	if err != nil {
 		return fmt.Errorf("clusterAdmin.DescribeCluster error: %w", err)
 	}
 
+	fmt.Fprintf(os.Stdout, "Cluster ID: %s\n\n", clusterID)
 	fmt.Fprintln(os.Stdout, "Brokers")
 
 	return renderBrokerTable(brokers, controllerID)
