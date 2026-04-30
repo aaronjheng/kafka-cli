@@ -41,6 +41,7 @@ func topicCmd() *cobra.Command {
 	cmd.AddCommand(topicAlterCmd())
 	cmd.AddCommand(topicDeleteCmd())
 	cmd.AddCommand(topicDescribeCmd())
+	cmd.AddCommand(topicGetOffsetsCmd())
 	cmd.AddCommand(topicConsumeCmd())
 	cmd.AddCommand(topicProduceCmd())
 
@@ -226,6 +227,39 @@ func topicDescribeCmd() *cobra.Command {
 			err = admin.DescribeTopic(args[0])
 			if err != nil {
 				return fmt.Errorf("admin.DescribeTopic error: %w", err)
+			}
+
+			return nil
+		},
+	}
+
+	return cmd
+}
+
+func topicGetOffsetsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "get-offsets TOPIC",
+		Short:             "Show oldest and newest offsets for each partition of a topic",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: topicCompletionFunc,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
+			admin, closer, err := provideAdmin()
+			if err != nil {
+				return fmt.Errorf("provideAdmin error: %w", err)
+			}
+
+			defer func() {
+				err := closer(ctx)
+				if err != nil {
+					slog.Error("closer error", slog.Any("error", err))
+				}
+			}()
+
+			err = admin.GetOffsets(args[0])
+			if err != nil {
+				return fmt.Errorf("admin.GetOffsets error: %w", err)
 			}
 
 			return nil

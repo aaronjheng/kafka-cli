@@ -215,6 +215,42 @@ func formatSize(bytes int64) string {
 	}
 }
 
+func (a *Admin) GetOffsets(topic string) error {
+	partitions, err := a.client.Partitions(topic)
+	if err != nil {
+		return fmt.Errorf("client.Partitions error: %w", err)
+	}
+
+	slices.Sort(partitions)
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.Header([]any{"Partition", "Oldest Offset", "Newest Offset"})
+
+	for _, partition := range partitions {
+		oldest, err := a.client.GetOffset(topic, partition, sarama.OffsetOldest)
+		if err != nil {
+			return fmt.Errorf("client.GetOffset error: %w", err)
+		}
+
+		newest, err := a.client.GetOffset(topic, partition, sarama.OffsetNewest)
+		if err != nil {
+			return fmt.Errorf("client.GetOffset error: %w", err)
+		}
+
+		err = table.Append([]any{partition, oldest, newest})
+		if err != nil {
+			return fmt.Errorf("table.Append error: %w", err)
+		}
+	}
+
+	err = table.Render()
+	if err != nil {
+		return fmt.Errorf("table.Render error: %w", err)
+	}
+
+	return nil
+}
+
 func (a *Admin) AlterTopicPartitions(topic string, numPartitions int32) error {
 	err := a.clusterAdmin.CreatePartitions(topic, numPartitions, nil, false)
 	if err != nil {
