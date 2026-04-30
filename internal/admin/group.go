@@ -2,6 +2,7 @@ package admin
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -53,6 +54,103 @@ func (a *Admin) ListConsumerGroups() error {
 
 	return nil
 }
+
+func (a *Admin) DescribeConsumerGroup(group string) error {
+	details, err := a.clusterAdmin.DescribeConsumerGroups([]string{group})
+	if err != nil {
+		return fmt.Errorf("clusterAdmin.DescribeConsumerGroups error: %w", err)
+	}
+
+	if len(details) == 0 {
+		return fmt.Errorf("%w: %s", errConsumerGroupNotFound, group)
+	}
+
+	desc := details[0]
+
+	offsetResp, err := a.clusterAdmin.ListConsumerGroupOffsets(group, nil)
+	if err != nil {
+		return fmt.Errorf("clusterAdmin.ListConsumerGroupOffsets error: %w", err)
+	}
+
+	fmt.Fprintf(os.Stdout, "Consumer Group: %s\n", desc.GroupId)
+	fmt.Fprintf(os.Stdout, "State: %s\n", desc.State)
+	fmt.Fprintf(os.Stdout, "Protocol Type: %s\n", desc.ProtocolType)
+	fmt.Fprintf(os.Stdout, "Protocol: %s\n", desc.Protocol)
+	fmt.Fprintf(os.Stdout, "Members: %d\n", len(desc.Members))
+	fmt.Fprintln(os.Stdout)
+
+	if len(desc.Members) > 0 {
+		fmt.Fprintln(os.Stdout, "Members")
+
+		err = a.renderGroupMembersTable(desc.Members)
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintln(os.Stdout)
+	}
+
+	if len(offsetResp.Blocks) > 0 {
+		fmt.Fprintln(os.Stdout, "Offsets")
+
+		err = a.renderGroupOffsetsTable(offsetResp.Blocks)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (a *Admin) renderGroupMembersTable(members map[string]*sarama.GroupMemberDescription) error {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.Header([]any{"Member ID", "Client ID", "Client Host"})
+
+	for _, member := range members {
+		err := table.Append([]any{member.MemberId, member.ClientId, member.ClientHost})
+		if err != nil {
+			return fmt.Errorf("table.Append error: %w", err)
+		}
+	}
+
+	err := table.Render()
+	if err != nil {
+		return fmt.Errorf("table.Render error: %w", err)
+	}
+
+	return nil
+}
+
+func (a *Admin) renderGroupOffsetsTable(blocks map[string]map[int32]*sarama.OffsetFetchResponseBlock) error {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.Header([]any{"Topic", "Partition", "Offset"})
+
+	topics := slices.SortedStableFunc(maps.Keys(blocks), cmp.Compare)
+
+	for _, topic := range topics {
+		partitions := blocks[topic]
+
+		partitionIDs := slices.SortedStableFunc(maps.Keys(partitions), cmp.Compare)
+
+		for _, partitionID := range partitionIDs {
+			block := partitions[partitionID]
+
+			err := table.Append([]any{topic, partitionID, block.Offset})
+			if err != nil {
+				return fmt.Errorf("table.Append error: %w", err)
+			}
+		}
+	}
+
+	err := table.Render()
+	if err != nil {
+		return fmt.Errorf("table.Render error: %w", err)
+	}
+
+	return nil
+}
+
+var errConsumerGroupNotFound = errors.New("consumer group not found")
 
 func (a *Admin) DeleteConsumerGroups(groups ...string) error {
 	for _, group := range groups {

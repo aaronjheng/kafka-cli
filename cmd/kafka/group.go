@@ -14,6 +14,7 @@ func groupCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(groupListCmd())
+	cmd.AddCommand(groupDescribeCmd())
 	cmd.AddCommand(groupDeleteCmd())
 
 	return cmd
@@ -42,6 +43,39 @@ func groupListCmd() *cobra.Command {
 			err = admin.ListConsumerGroups()
 			if err != nil {
 				return fmt.Errorf("admin.ListConsumerGroups error: %w", err)
+			}
+
+			return nil
+		},
+	}
+
+	return cmd
+}
+
+func groupDescribeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "describe GROUP",
+		Short:             "Describe a consumer group",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: consumerGroupCompletionFunc,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
+			admin, closer, err := provideAdmin()
+			if err != nil {
+				return fmt.Errorf("provideAdmin error: %w", err)
+			}
+
+			defer func() {
+				err := closer(ctx)
+				if err != nil {
+					slog.Error("closer error", slog.Any("error", err))
+				}
+			}()
+
+			err = admin.DescribeConsumerGroup(args[0])
+			if err != nil {
+				return fmt.Errorf("admin.DescribeConsumerGroup error: %w", err)
 			}
 
 			return nil
