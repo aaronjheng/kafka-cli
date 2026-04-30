@@ -93,7 +93,9 @@ func (a *Admin) DescribeConsumerGroup(group string) error {
 	if len(offsetResp.Blocks) > 0 {
 		fmt.Fprintln(os.Stdout, "Offsets")
 
-		err = a.renderGroupOffsetsTable(offsetResp.Blocks)
+		assignments := a.buildPartitionAssignments(desc.Members)
+
+		err = a.renderGroupOffsetsTable(offsetResp.Blocks, assignments)
 		if err != nil {
 			return err
 		}
@@ -121,7 +123,45 @@ func (a *Admin) renderGroupMembersTable(members map[string]*sarama.GroupMemberDe
 	return nil
 }
 
-func (a *Admin) renderGroupOffsetsTable(blocks map[string]map[int32]*sarama.OffsetFetchResponseBlock) error {
+type (
+	topicPartitionOffsets   = map[string]map[int32]*sarama.OffsetFetchResponseBlock
+	topicPartitionOwners    = map[string]map[int32]partitionOwner
+	memberDescriptions      = map[string]*sarama.GroupMemberDescription
+	partitionOffsetResponse = map[int32]*sarama.OffsetFetchResponseBlock
+)
+
+type partitionOwner struct {
+	memberID   string
+	clientHost string
+}
+
+func (a *Admin) buildPartitionAssignments(members memberDescriptions) topicPartitionOwners {
+	assignments := make(map[string]map[int32]partitionOwner)
+
+	for _, member := range members {
+		assignment, err := member.GetMemberAssignment()
+		if err != nil {
+			continue
+		}
+
+		for topic, partitionIDs := range assignment.Topics {
+			if assignments[topic] == nil {
+				assignments[topic] = make(map[int32]partitionOwner)
+			}
+
+			for _, partitionID := range partitionIDs {
+				assignments[topic][partitionID] = partitionOwner{
+					memberID:   member.MemberId,
+					clientHost: member.ClientHost,
+				}
+			}
+		}
+	}
+
+	return assignments
+}
+
+func (a *Admin) renderGroupOffsetsTable(blocks topicPartitionOffsets, assignments topicPartitionOwners) error {
 	topics := slices.SortedStableFunc(maps.Keys(blocks), cmp.Compare)
 
 	for i, topic := range topics {
@@ -133,7 +173,7 @@ func (a *Admin) renderGroupOffsetsTable(blocks map[string]map[int32]*sarama.Offs
 
 		partitions := blocks[topic]
 
-		err := a.renderTopicOffsetsTable(topic, partitions)
+		err := a.renderTopicOffsetsTable(topic, partitions, assignments[topic])
 		if err != nil {
 			return err
 		}
@@ -142,9 +182,13 @@ func (a *Admin) renderGroupOffsetsTable(blocks map[string]map[int32]*sarama.Offs
 	return nil
 }
 
-func (a *Admin) renderTopicOffsetsTable(topic string, partitions map[int32]*sarama.OffsetFetchResponseBlock) error {
+func (a *Admin) renderTopicOffsetsTable(
+	topic string,
+	partitions partitionOffsetResponse,
+	owners map[int32]partitionOwner,
+) error {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.Header([]any{"Partition", "Offset", "Lag"})
+	table.Header([]any{"Partition", "Current Offset", "Log End Offset", "Lag", "Consumer ID", "Host"})
 
 	partitionIDs := slices.SortedStableFunc(maps.Keys(partitions), cmp.Compare)
 
@@ -158,7 +202,14 @@ func (a *Admin) renderTopicOffsetsTable(topic string, partitions map[int32]*sara
 
 		lag := endOffset - block.Offset
 
-		err = table.Append([]any{partitionID, block.Offset, lag})
+		var consumerID, host string
+
+		if owner, ok := owners[partitionID]; ok {
+			consumerID = owner.memberID
+			host = owner.clientHost
+		}
+
+		err = table.Append([]any{partitionID, block.Offset, endOffset, lag, consumerID, host})
 		if err != nil {
 			return fmt.Errorf("table.Append error: %w", err)
 		}
