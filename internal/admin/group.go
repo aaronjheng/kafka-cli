@@ -122,23 +122,45 @@ func (a *Admin) renderGroupMembersTable(members map[string]*sarama.GroupMemberDe
 }
 
 func (a *Admin) renderGroupOffsetsTable(blocks map[string]map[int32]*sarama.OffsetFetchResponseBlock) error {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.Header([]any{"Topic", "Partition", "Offset"})
-
 	topics := slices.SortedStableFunc(maps.Keys(blocks), cmp.Compare)
 
-	for _, topic := range topics {
+	for i, topic := range topics {
+		if i > 0 {
+			fmt.Fprintln(os.Stdout)
+		}
+
+		fmt.Fprintf(os.Stdout, "Topic: %s\n", topic)
+
 		partitions := blocks[topic]
 
-		partitionIDs := slices.SortedStableFunc(maps.Keys(partitions), cmp.Compare)
+		err := a.renderTopicOffsetsTable(topic, partitions)
+		if err != nil {
+			return err
+		}
+	}
 
-		for _, partitionID := range partitionIDs {
-			block := partitions[partitionID]
+	return nil
+}
 
-			err := table.Append([]any{topic, partitionID, block.Offset})
-			if err != nil {
-				return fmt.Errorf("table.Append error: %w", err)
-			}
+func (a *Admin) renderTopicOffsetsTable(topic string, partitions map[int32]*sarama.OffsetFetchResponseBlock) error {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.Header([]any{"Partition", "Offset", "Lag"})
+
+	partitionIDs := slices.SortedStableFunc(maps.Keys(partitions), cmp.Compare)
+
+	for _, partitionID := range partitionIDs {
+		block := partitions[partitionID]
+
+		endOffset, err := a.client.GetOffset(topic, partitionID, sarama.OffsetNewest)
+		if err != nil {
+			return fmt.Errorf("client.GetOffset error: %w", err)
+		}
+
+		lag := endOffset - block.Offset
+
+		err = table.Append([]any{partitionID, block.Offset, lag})
+		if err != nil {
+			return fmt.Errorf("table.Append error: %w", err)
 		}
 	}
 
