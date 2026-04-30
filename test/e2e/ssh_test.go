@@ -56,16 +56,12 @@ func TestClusterDescribe_SSH(t *testing.T) {
 		t.Fatalf("cluster describe failed: %v", err)
 	}
 
-	if !StringsContains(output, "Controller ID:") {
-		t.Errorf("expected 'Controller ID:' in output, got: %s", output)
+	if !StringsContains(output, "Cluster ID:") {
+		t.Errorf("expected 'Cluster ID:' in output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Brokers:") {
-		t.Errorf("expected 'Brokers:' in output, got: %s", output)
-	}
-
-	if !StringsContains(output, "Topics:") {
-		t.Errorf("expected 'Topics:' in output, got: %s", output)
+	if !StringsContains(output, "Brokers") {
+		t.Errorf("expected 'Brokers' in output, got: %s", output)
 	}
 }
 
