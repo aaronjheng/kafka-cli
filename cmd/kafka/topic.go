@@ -38,6 +38,7 @@ func topicCmd() *cobra.Command {
 
 	cmd.AddCommand(topicListCmd())
 	cmd.AddCommand(topicCreateCmd())
+	cmd.AddCommand(topicAlterCmd())
 	cmd.AddCommand(topicDeleteCmd())
 	cmd.AddCommand(topicDescribeCmd())
 	cmd.AddCommand(topicConsumeCmd())
@@ -122,6 +123,48 @@ func topicCreateCmd() *cobra.Command {
 
 	cmd.Flags().Int32("partitions", defaultTopicPartitions, "The number of partitions for the topic")
 	cmd.Flags().Int16("replication-factor", 1, "The replication factor for each partition in the topic being created.")
+
+	return cmd
+}
+
+func topicAlterCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "alter TOPIC",
+		Short:             "Alter a topic",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: topicCompletionFunc,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
+			topic := args[0]
+
+			numPartitions, err := cmd.Flags().GetInt32("partitions")
+			if err != nil {
+				return fmt.Errorf("get partitions flag error: %w", err)
+			}
+
+			admin, closer, err := provideAdmin()
+			if err != nil {
+				return fmt.Errorf("provideAdmin error: %w", err)
+			}
+
+			defer func() {
+				err := closer(ctx)
+				if err != nil {
+					slog.Error("closer error", slog.Any("error", err))
+				}
+			}()
+
+			err = admin.AlterTopicPartitions(topic, numPartitions)
+			if err != nil {
+				return fmt.Errorf("admin.AlterTopicPartitions error: %w", err)
+			}
+
+			return nil
+		},
+	}
+
+	cmd.Flags().Int32("partitions", -1, "The total number of partitions for the topic")
 
 	return cmd
 }

@@ -211,6 +211,15 @@ func formatSize(bytes int64) string {
 	}
 }
 
+func (a *Admin) AlterTopicPartitions(topic string, numPartitions int32) error {
+	err := a.clusterAdmin.CreatePartitions(topic, numPartitions, nil, false)
+	if err != nil {
+		return fmt.Errorf("clusterAdmin.CreatePartitions error: %w", err)
+	}
+
+	return nil
+}
+
 func (a *Admin) DeleteTopics(topics ...string) error {
 	for _, topic := range topics {
 		slog.Info("Delete topic", slog.String("topic", topic))
