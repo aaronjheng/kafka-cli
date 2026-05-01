@@ -113,6 +113,14 @@ kafka topic create my-topic
 kafka topic create my-topic --partitions 6 --replication-factor 3
 ```
 
+### `kafka topic alter TOPIC`
+
+Alter the partition count of a topic.
+
+```shell
+kafka topic alter my-topic --partitions 6
+```
+
 ### `kafka topic delete TOPIC [TOPIC...]`
 
 Delete one or more topics.
@@ -128,6 +136,14 @@ Show details of a topic (partitions, replicas, ISR, etc.).
 
 ```shell
 kafka topic describe my-topic
+```
+
+### `kafka topic get-offsets TOPIC`
+
+Show the oldest and newest offsets for each partition of a topic.
+
+```shell
+kafka topic get-offsets my-topic
 ```
 
 ### `kafka topic consume TOPIC`
@@ -157,6 +173,12 @@ foo bar
 
 # Pipe data from a file
 cat messages.txt | kafka topic produce my-topic
+
+# Produce key-value messages using a separator
+kafka topic produce my-topic --key-separator ":"
+key1:value1
+key2:value2
+^D
 ```
 
 ### `kafka group list`
@@ -165,6 +187,14 @@ List all consumer groups in the cluster.
 
 ```shell
 kafka group list
+```
+
+### `kafka group describe GROUP`
+
+Show details of a consumer group (members, offsets, lag, etc.).
+
+```shell
+kafka group describe my-group
 ```
 
 ### `kafka group delete GROUP [GROUP...]`
