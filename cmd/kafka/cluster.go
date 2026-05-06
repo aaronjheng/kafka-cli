@@ -5,6 +5,8 @@ import (
 	"log/slog"
 
 	"github.com/spf13/cobra"
+
+	"github.com/aaronjheng/kafka-cli/internal/admin"
 )
 
 func clusterCmd() *cobra.Command {
@@ -25,7 +27,7 @@ func clusterDescribeCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
-			admin, closer, err := provideAdmin()
+			admin, closer, err := admin.NewFromConfig(cfg, cluster)
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}

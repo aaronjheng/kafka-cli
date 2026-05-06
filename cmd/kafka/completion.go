@@ -7,6 +7,8 @@ import (
 	"slices"
 
 	"github.com/spf13/cobra"
+
+	"github.com/aaronjheng/kafka-cli/internal/admin"
 )
 
 func completionCmd() *cobra.Command {
@@ -77,7 +79,7 @@ func topicCompletionFunc(cmd *cobra.Command, _ []string, _ string) ([]string, co
 		return nil, cobra.ShellCompDirectiveError
 	}
 
-	adminClient, closer, err := provideAdmin()
+	adminClient, closer, err := admin.NewFromConfig(cfg, cluster)
 	if err != nil {
 		slog.Debug("provideAdmin error", slog.Any("error", err))
 
@@ -106,7 +108,7 @@ func consumerGroupCompletionFunc(cmd *cobra.Command, _ []string, _ string) ([]st
 		return nil, cobra.ShellCompDirectiveError
 	}
 
-	adminClient, closer, err := provideAdmin()
+	adminClient, closer, err := admin.NewFromConfig(cfg, cluster)
 	if err != nil {
 		slog.Debug("provideAdmin error", slog.Any("error", err))
 

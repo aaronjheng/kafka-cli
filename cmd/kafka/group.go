@@ -5,6 +5,8 @@ import (
 	"log/slog"
 
 	"github.com/spf13/cobra"
+
+	"github.com/aaronjheng/kafka-cli/internal/admin"
 )
 
 func groupCmd() *cobra.Command {
@@ -27,7 +29,7 @@ func groupListCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
-			admin, closer, err := provideAdmin()
+			admin, closer, err := admin.NewFromConfig(cfg, cluster)
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}
@@ -61,7 +63,7 @@ func groupDescribeCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			admin, closer, err := provideAdmin()
+			admin, closer, err := admin.NewFromConfig(cfg, cluster)
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}
@@ -93,7 +95,7 @@ func groupDeleteCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			admin, closer, err := provideAdmin()
+			admin, closer, err := admin.NewFromConfig(cfg, cluster)
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}

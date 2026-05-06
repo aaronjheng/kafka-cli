@@ -1,32 +1,16 @@
 package main
 
 import (
-	"bufio"
-	"context"
-	"errors"
 	"fmt"
-	"io"
 	"log/slog"
-	"os"
-	"strconv"
-	"strings"
-	"sync"
 
-	"github.com/IBM/sarama"
 	"github.com/spf13/cobra"
 
+	"github.com/aaronjheng/kafka-cli/internal/admin"
 	"github.com/aaronjheng/kafka-cli/internal/kafka"
 )
 
-const (
-	defaultTopicPartitions      int32 = 3
-	consumerMessageChannelBufSz int   = 10
-)
-
-type consumerMessage struct {
-	partition int
-	value     string
-}
+const defaultTopicPartitions int32 = 3
 
 func topicCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -55,7 +39,7 @@ func topicListCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
-			admin, closer, err := provideAdmin()
+			admin, closer, err := admin.NewFromConfig(cfg, cluster)
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}
@@ -100,7 +84,7 @@ func topicCreateCmd() *cobra.Command {
 				return fmt.Errorf("get replication-factor flag error: %w", err)
 			}
 
-			admin, closer, err := provideAdmin()
+			admin, closer, err := admin.NewFromConfig(cfg, cluster)
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}
@@ -144,7 +128,7 @@ func topicAlterCmd() *cobra.Command {
 				return fmt.Errorf("get partitions flag error: %w", err)
 			}
 
-			admin, closer, err := provideAdmin()
+			admin, closer, err := admin.NewFromConfig(cfg, cluster)
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}
@@ -178,7 +162,7 @@ func topicDeleteCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			admin, closer, err := provideAdmin()
+			admin, closer, err := admin.NewFromConfig(cfg, cluster)
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}
@@ -212,7 +196,7 @@ func topicDescribeCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			admin, closer, err := provideAdmin()
+			admin, closer, err := admin.NewFromConfig(cfg, cluster)
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}
@@ -245,7 +229,7 @@ func topicGetOffsetsCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			admin, closer, err := provideAdmin()
+			admin, closer, err := admin.NewFromConfig(cfg, cluster)
 			if err != nil {
 				return fmt.Errorf("provideAdmin error: %w", err)
 			}
@@ -276,7 +260,7 @@ func topicConsumeCmd() *cobra.Command {
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: topicCompletionFunc,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clusterCfg, err := clusterConfig()
+			clusterCfg, err := cfg.Cluster(cluster)
 			if err != nil {
 				return fmt.Errorf("clusterConfig error: %w", err)
 			}
@@ -298,10 +282,10 @@ func topicConsumeCmd() *cobra.Command {
 				partitions = []int32{partition}
 			}
 
-			partitionWidth := calculatePartitionWidth(partitions)
-			msgCh := startPartitionReaders(cmd.Context(), clusterCfg, topic, partitions)
+			partitionWidth := kafka.CalculatePartitionWidth(partitions)
+			msgCh := kafka.StartPartitionReaders(cmd.Context(), clusterCfg, topic, partitions)
 
-			printMessages(msgCh, partitionWidth)
+			kafka.PrintMessages(msgCh, partitionWidth)
 
 			return nil
 		},
@@ -312,8 +296,6 @@ func topicConsumeCmd() *cobra.Command {
 	return cmd
 }
 
-const keyValueParts = 2
-
 func topicProduceCmd() *cobra.Command {
 	var keySeparator string
 
@@ -323,147 +305,16 @@ func topicProduceCmd() *cobra.Command {
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: topicCompletionFunc,
 		RunE: func(_ *cobra.Command, args []string) error {
-			return runTopicProduce(args, keySeparator)
+			clusterCfg, err := cfg.Cluster(cluster)
+			if err != nil {
+				return fmt.Errorf("clusterConfig error: %w", err)
+			}
+
+			return kafka.RunTopicProduce(clusterCfg, args[0], keySeparator)
 		},
 	}
 
 	cmd.Flags().StringVar(&keySeparator, "key-separator", "", "Separator to split key from value")
 
 	return cmd
-}
-
-func runTopicProduce(args []string, keySeparator string) error {
-	clusterCfg, err := clusterConfig()
-	if err != nil {
-		return fmt.Errorf("clusterConfig error: %w", err)
-	}
-
-	topic := args[0]
-
-	producer, err := kafka.NewSyncProducer(clusterCfg)
-	if err != nil {
-		return fmt.Errorf("kafka.NewSyncProducer error: %w", err)
-	}
-
-	defer func() {
-		err := producer.Close()
-		if err != nil {
-			slog.Error("producer.Close failed", slog.Any("error", err))
-		}
-	}()
-
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		if line == "" {
-			continue
-		}
-
-		msg := &sarama.ProducerMessage{
-			Topic: topic,
-			Value: sarama.StringEncoder(line),
-		}
-
-		if keySeparator != "" {
-			parts := strings.SplitN(line, keySeparator, keyValueParts)
-			if len(parts) == keyValueParts {
-				msg.Key = sarama.StringEncoder(parts[0])
-				msg.Value = sarama.StringEncoder(parts[1])
-			}
-		}
-
-		_, _, err := producer.SendMessage(msg)
-		if err != nil {
-			slog.Error("producer.SendMessage failed", slog.Any("error", err))
-		}
-	}
-
-	return nil
-}
-
-func calculatePartitionWidth(partitions []int32) int {
-	partitionWidth := 1
-
-	for _, partition := range partitions {
-		width := len(strconv.Itoa(int(partition)))
-		if width > partitionWidth {
-			partitionWidth = width
-		}
-	}
-
-	return partitionWidth
-}
-
-func startPartitionReaders(
-	ctx context.Context,
-	clusterCfg *kafka.Config,
-	topic string,
-	partitions []int32,
-) <-chan consumerMessage {
-	var waitGroup sync.WaitGroup
-
-	msgCh := make(chan consumerMessage, consumerMessageChannelBufSz)
-
-	for _, partition := range partitions {
-		waitGroup.Go(func() {
-			readPartitionMessages(ctx, clusterCfg, topic, partition, msgCh)
-		})
-	}
-
-	go func() {
-		waitGroup.Wait()
-		close(msgCh)
-	}()
-
-	return msgCh
-}
-
-func readPartitionMessages(
-	ctx context.Context,
-	clusterCfg *kafka.Config,
-	topic string,
-	partition int32,
-	msgCh chan<- consumerMessage,
-) {
-	reader, err := kafka.NewPartitionReader(clusterCfg, topic, partition, sarama.OffsetNewest)
-	if err != nil {
-		slog.Error("kafka.NewPartitionReader failed", slog.Any("error", err))
-
-		return
-	}
-
-	defer func() {
-		err := reader.Close()
-		if err != nil {
-			slog.Error("reader.Close failed", slog.Any("error", err))
-		}
-	}()
-
-	for {
-		msg, err := reader.ReadMessage(ctx)
-		if err != nil {
-			if errors.Is(err, context.Canceled) || errors.Is(err, io.EOF) {
-				return
-			}
-
-			slog.Error("reader.ReadMessage failed", slog.Any("error", err))
-
-			return
-		}
-
-		msgCh <- consumerMessage{
-			partition: int(msg.Partition),
-			value:     string(msg.Value),
-		}
-	}
-}
-
-func printMessages(msgCh <-chan consumerMessage, partitionWidth int) {
-	for msg := range msgCh {
-		_, err := fmt.Fprintf(os.Stdout, "[%0*d] %s\n", partitionWidth, msg.partition, msg.value)
-		if err != nil {
-			slog.Error("fmt.Fprintf failed", slog.Any("error", err))
-		}
-	}
 }
