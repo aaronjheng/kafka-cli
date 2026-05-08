@@ -1,9 +1,5 @@
 # AGENTS.md
 
-## CRITICAL RULES
-
-- **NEVER commit or push changes unless the user EXPLICITLY asks you to.** Even if the user says "commit", do NOT also push unless they say "push". Do NOT assume the user wants to commit after making changes. Always wait for explicit instruction.
-
 ## Commands
 
 ```bash
@@ -13,20 +9,15 @@ go build ./...
 # Lint
 just lint
 
-# Check go mod tidy
-go mod tidy -diff
+# Lint with auto-fix
+just lint-with-fix
 
 # Update dependencies
 just bump-deps
+
+# Install
+just install
 ```
-
-## Project Structure
-
-- `cmd/kafka/` - CLI entry point and command definitions
-- `internal/admin/` - Kafka admin client operations (topics, groups)
-- `internal/config/` - Configuration loading and management
-- `internal/kafka/` - Kafka client, dialer, and connection utilities
-- `internal/ssh/` - SSH proxy support
 
 ## Code Quality
 
@@ -44,6 +35,10 @@ just bump-deps
 - Do not enable deprecated linters.
 
 ## Git Workflow
+
+### Critical Rules
+
+- **NEVER commit or push changes unless the user EXPLICITLY asks you to.** Even if the user says "commit", do NOT also push unless they say "push". Do NOT assume the user wants to commit after making changes. Always wait for explicit instruction.
 
 - Never run `git commit`, `git push`, or other git mutations unless explicitly instructed
 - If explicitly instructed to commit or push, execute directly without extra confirmation
