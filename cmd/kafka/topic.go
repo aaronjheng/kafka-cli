@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/aaronjheng/kafka-cli/internal/admin"
 	"github.com/aaronjheng/kafka-cli/internal/kafka"
+	"github.com/aaronjheng/kafka-cli/internal/kafka/admin"
 )
 
 const defaultTopicPartitions int32 = 3
