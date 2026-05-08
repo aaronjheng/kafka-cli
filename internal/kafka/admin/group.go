@@ -67,6 +67,10 @@ func (a *Admin) DescribeConsumerGroup(group string) error {
 
 	desc := details[0]
 
+	if desc.State == "Dead" {
+		return fmt.Errorf("%w: %s", errConsumerGroupNotFound, group)
+	}
+
 	offsetResp, err := a.clusterAdmin.ListConsumerGroupOffsets(group, nil)
 	if err != nil {
 		return fmt.Errorf("clusterAdmin.ListConsumerGroupOffsets error: %w", err)

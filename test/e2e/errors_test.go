@@ -19,7 +19,9 @@ clusters:
 
 	WaitForKafka(t, cli)
 
-	_, err := cli.Run(t.Context(), "topic", "describe", "nonexistent-topic-e2e")
+	topic := UniqueTopicName(t)
+
+	_, err := cli.Run(t.Context(), "topic", "describe", topic)
 	if err == nil {
 		t.Error("expected error when describing non-existent topic")
 	}
@@ -40,7 +42,9 @@ clusters:
 
 	WaitForKafka(t, cli)
 
-	_, err := cli.Run(t.Context(), "topic", "delete", "nonexistent-topic-e2e")
+	topic := UniqueTopicName(t)
+
+	_, err := cli.Run(t.Context(), "topic", "delete", topic)
 	if err == nil {
 		t.Error("expected error when deleting non-existent topic")
 	}
@@ -61,7 +65,9 @@ clusters:
 
 	WaitForKafka(t, cli)
 
-	_, err := cli.Run(t.Context(), "topic", "alter", "nonexistent-topic-e2e", "--partitions", "5")
+	topic := UniqueTopicName(t)
+
+	_, err := cli.Run(t.Context(), "topic", "alter", topic, "--partitions", "5")
 	if err == nil {
 		t.Error("expected error when altering non-existent topic")
 	}
@@ -114,7 +120,9 @@ clusters:
 
 	WaitForKafka(t, cli)
 
-	_, err := cli.Run(t.Context(), "topic", "get-offsets", "nonexistent-topic-e2e")
+	topic := UniqueTopicName(t)
+
+	_, err := cli.Run(t.Context(), "topic", "get-offsets", topic)
 	if err == nil {
 		t.Error("expected error when getting offsets for non-existent topic")
 	}
@@ -135,7 +143,9 @@ clusters:
 
 	WaitForKafka(t, cli)
 
-	_, err := cli.Run(t.Context(), "group", "describe", "nonexistent-group-e2e")
+	group := UniqueGroupName(t)
+
+	_, err := cli.Run(t.Context(), "group", "describe", group)
 	if err == nil {
 		t.Error("expected error when describing non-existent consumer group")
 	}
@@ -156,7 +166,9 @@ clusters:
 
 	WaitForKafka(t, cli)
 
-	_, err := cli.Run(t.Context(), "group", "delete", "nonexistent-group-e2e")
+	group := UniqueGroupName(t)
+
+	_, err := cli.Run(t.Context(), "group", "delete", group)
 	if err == nil {
 		t.Error("expected error when deleting non-existent consumer group")
 	}

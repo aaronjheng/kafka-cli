@@ -216,6 +216,15 @@ func formatSize(bytes int64) string {
 }
 
 func (a *Admin) GetOffsets(topic string) error {
+	topicDetails, err := a.clusterAdmin.ListTopics()
+	if err != nil {
+		return fmt.Errorf("clusterAdmin.ListTopics error: %w", err)
+	}
+
+	if _, ok := topicDetails[topic]; !ok {
+		return fmt.Errorf("%w: %s", errTopicNotFound, topic)
+	}
+
 	partitions, err := a.client.Partitions(topic)
 	if err != nil {
 		return fmt.Errorf("client.Partitions error: %w", err)
