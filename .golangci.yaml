@@ -113,6 +113,8 @@ linters:
     - wsl_v5
     - zerologlint
   settings:
+    goconst:
+      min-occurrences: 5
     exhaustruct:
       include:
         - 'github\.com/aaronjheng/kafka-cli/.+'
