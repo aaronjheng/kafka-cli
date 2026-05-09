@@ -18,8 +18,9 @@ var embeddedVersion string
 func versionCmd() *cobra.Command {
 	versionStr := strings.TrimRight(embeddedVersion, "\n")
 	cmd := &cobra.Command{
-		Use:   "version",
-		Short: "Print the version information",
+		Use:         "version",
+		Short:       "Print the version information",
+		Annotations: map[string]string{"skipConfigLoad": "true"},
 		Run: func(_ *cobra.Command, _ []string) {
 			commit := version.BuildCommit()
 			if commit == "" {

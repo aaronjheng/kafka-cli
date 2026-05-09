@@ -22,6 +22,10 @@ func rootCmd() *cobra.Command {
 		Short:        "Command line tool for Apache Kafka",
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			if _, ok := cmd.Annotations["skipConfigLoad"]; ok {
+				return nil
+			}
+
 			cfgFilepath, err := cmd.Flags().GetString("config")
 			if err != nil {
 				return fmt.Errorf("config flag error: %w", err)
