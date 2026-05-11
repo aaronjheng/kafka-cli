@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"github.com/IBM/sarama"
-	"github.com/olekukonko/tablewriter"
 )
 
 var errClusterIDNotAvailable = errors.New("cluster ID not available")
@@ -51,7 +50,7 @@ func (a *Admin) DescribeCluster() error {
 }
 
 func renderBrokerTable(brokers []*sarama.Broker, controllerID int32) error {
-	table := tablewriter.NewWriter(os.Stdout)
+	table := newTable(os.Stdout)
 	table.Header([]any{"ID", "Address", "Rack", "Type"})
 
 	slices.SortStableFunc(brokers, func(a, b *sarama.Broker) int {

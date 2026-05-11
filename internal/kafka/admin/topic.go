@@ -10,7 +10,6 @@ import (
 	"slices"
 
 	"github.com/IBM/sarama"
-	"github.com/olekukonko/tablewriter"
 )
 
 func (a *Admin) ListTopicNames() ([]string, error) {
@@ -30,7 +29,7 @@ func (a *Admin) ListTopics() error {
 
 	topics := slices.SortedStableFunc(maps.Keys(topicDetails), cmp.Compare)
 
-	table := tablewriter.NewWriter(os.Stdout)
+	table := newTable(os.Stdout)
 	table.Header([]any{"Topic", "Number of Partitions", "Replication Factor"})
 
 	for _, topic := range topics {
@@ -112,7 +111,7 @@ func (a *Admin) DescribeTopic(topic string) error {
 }
 
 func (a *Admin) renderPartitionTable(partitions []*sarama.PartitionMetadata) error {
-	table := tablewriter.NewWriter(os.Stdout)
+	table := newTable(os.Stdout)
 	table.Header([]any{"Partition", "Leader", "Replicas", "ISR"})
 
 	slices.SortStableFunc(partitions, func(a, b *sarama.PartitionMetadata) int {
@@ -232,7 +231,7 @@ func (a *Admin) GetOffsets(topic string) error {
 
 	slices.Sort(partitions)
 
-	table := tablewriter.NewWriter(os.Stdout)
+	table := newTable(os.Stdout)
 	table.Header([]any{"Partition", "Oldest Offset", "Newest Offset"})
 
 	for _, partition := range partitions {

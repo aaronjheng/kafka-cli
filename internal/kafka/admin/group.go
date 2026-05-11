@@ -10,7 +10,6 @@ import (
 	"slices"
 
 	"github.com/IBM/sarama"
-	"github.com/olekukonko/tablewriter"
 )
 
 func (a *Admin) ListConsumerGroupIDs() ([]string, error) {
@@ -37,7 +36,7 @@ func (a *Admin) ListConsumerGroups() error {
 		return cmp.Compare(a.GroupId, b.GroupId)
 	})
 
-	table := tablewriter.NewWriter(os.Stdout)
+	table := newTable(os.Stdout)
 	table.Header([]string{"Consumer Group", "State", "Protocol Type", "Protocol", "Members"})
 
 	for _, detail := range details {
@@ -109,7 +108,7 @@ func (a *Admin) DescribeConsumerGroup(group string) error {
 }
 
 func (a *Admin) renderGroupMembersTable(members map[string]*sarama.GroupMemberDescription) error {
-	table := tablewriter.NewWriter(os.Stdout)
+	table := newTable(os.Stdout)
 	table.Header([]any{"Member ID", "Client ID", "Client Host"})
 
 	for _, member := range members {
@@ -191,7 +190,7 @@ func (a *Admin) renderTopicOffsetsTable(
 	partitions partitionOffsetResponse,
 	owners map[int32]partitionOwner,
 ) error {
-	table := tablewriter.NewWriter(os.Stdout)
+	table := newTable(os.Stdout)
 	table.Header([]any{"Partition", "Current Offset", "Log End Offset", "Lag", "Consumer ID", "Host"})
 
 	partitionIDs := slices.SortedStableFunc(maps.Keys(partitions), cmp.Compare)

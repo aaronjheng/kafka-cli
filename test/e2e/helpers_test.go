@@ -312,12 +312,18 @@ func WaitForKafka(t *testing.T, cli *KafkaCLI) {
 	}
 }
 
+var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func stripANSI(s string) string {
+	return ansiEscape.ReplaceAllString(s, "")
+}
+
 func TopicExistsInOutput(output, topic string) bool {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		cleaned := strings.Trim(line, " │")
+		cleaned := strings.Trim(stripANSI(line), " │")
 
 		fields := strings.Fields(cleaned)
 		if len(fields) > 0 && fields[0] == topic {
