@@ -213,9 +213,16 @@ Print version information.
 kafka version
 ```
 
-### `kafka completion [bash|zsh|fish|powershell]`
+### Shell Completion
 
-Generate shell completion script. See `kafka completion --help` for setup instructions.
+`kafka` supports shell completion for Bash, Zsh, and Fish.
+
+```shell
+# Load completion for current session
+source <(kafka completion bash)  # or zsh / fish
+```
+
+To install permanently, run `kafka completion <shell> --help` for instructions.
 
 ## License
 

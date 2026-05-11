@@ -13,7 +13,7 @@ import (
 
 func completionCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:         "completion [bash|zsh|fish|powershell]",
+		Use:         "completion [bash|zsh|fish]",
 		Short:       "Generate completion script",
 		Annotations: map[string]string{"skipConfigLoad": "true"},
 		Long: fmt.Sprintf(`To load completions:
@@ -46,17 +46,9 @@ fish:
 
   # To load completions for each session, execute once:
   $ %[1]s completion fish > ~/.config/fish/completions/%[1]s.fish
-
-PowerShell:
-
-  PS> %[1]s completion powershell | Out-String | Invoke-Expression
-
-  # To load completions for every new session, run:
-  PS> %[1]s completion powershell > %[1]s.ps1
-  # and source this file from your PowerShell profile.
 `, "kafka"),
 		DisableFlagsInUseLine: true,
-		ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
+		ValidArgs:             []string{"bash", "zsh", "fish"},
 		Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		Run: func(cmd *cobra.Command, args []string) {
 			genCompletion(cmd, args[0])
@@ -74,8 +66,6 @@ func genCompletion(cmd *cobra.Command, shell string) {
 		_ = cmd.Root().GenZshCompletion(os.Stdout)
 	case "fish":
 		_ = cmd.Root().GenFishCompletion(os.Stdout, true)
-	case "powershell":
-		_ = cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
 	}
 }
 
