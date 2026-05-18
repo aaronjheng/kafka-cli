@@ -37,21 +37,20 @@ jobs:
 
       - name: Generate SSH key
         id: ssh-key
-        run: |
-          mkdir -p /tmp/ssh-test
-          ssh-keygen -t ed25519 -f /tmp/ssh-test/id_ed25519 -N ""
-          echo "key-path=/tmp/ssh-test/id_ed25519" >> "$GITHUB_OUTPUT"
+        run: bash test/e2e/scripts/generate-ssh-key.sh
 
       - name: Generate TLS certificates
         id: tls-certs
         run: bash test/e2e/scripts/generate-tls-certs.sh
 
       - name: Prepare k8s manifest
-        run: |
-          sed -i "s|PLACEHOLDER_SSH_PUBLIC_KEY|$(cat /tmp/ssh-test/id_ed25519.pub)|" test/e2e/kafka/pod.yaml
-          sed -i "s|PLACEHOLDER_SSHD_CONFIG_PATH|${{ github.workspace }}/test/e2e/kafka/ssh/sshd_config.d|" test/e2e/kafka/pod.yaml
-          sed -i "s|PLACEHOLDER_SASL_CONFIG_PATH|${{ github.workspace }}/test/e2e/kafka/sasl|" test/e2e/kafka/pod.yaml
-          sed -i "s|PLACEHOLDER_TLS_CERTS_PATH|${{ steps.tls-certs.outputs.tls-certs-path }}|" test/e2e/kafka/pod.yaml
+        env:
+          KAFKA_VERSION: ${{ matrix.kafka-version }}
+          SSH_PUBLIC_KEY_FILE: ${{ steps.ssh-key.outputs.ssh-key-path }}.pub
+          SSHD_CONFIG_PATH: ${{ github.workspace }}/test/e2e/kafka/ssh/sshd_config.d
+          SASL_CONFIG_PATH: ${{ github.workspace }}/test/e2e/kafka/sasl
+          TLS_CERTS_PATH: ${{ steps.tls-certs.outputs.tls-certs-path }}
+        run: bash test/e2e/scripts/prepare-k8s-manifest.sh
 
       - name: Start podman pod
         run: |
@@ -62,11 +61,13 @@ jobs:
         run: bash test/e2e/scripts/wait-for-kafka.sh
 
       - name: Wait for SSH to be ready
+        env:
+          SSH_KEY_PATH: ${{ steps.ssh-key.outputs.ssh-key-path }}
         run: bash test/e2e/scripts/wait-for-ssh.sh
 
       - name: Run E2E tests
         env:
-          SSH_TEST_KEY_PATH: ${{ steps.ssh-key.outputs.key-path }}
+          SSH_TEST_KEY_PATH: ${{ steps.ssh-key.outputs.ssh-key-path }}
           KAFKA_CLI_BINARY: ${{ github.workspace }}/kafka
           TLS_TEST_CA_CERT: ${{ steps.tls-certs.outputs.ca-cert-path }}
         run: |
