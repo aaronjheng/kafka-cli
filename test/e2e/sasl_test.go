@@ -22,7 +22,7 @@ const (
 	scram512Password = "scram512-secret"
 )
 
-var scramUsersOnce sync.Once //nolint:gochecknoglobals // test-only: ensures SCRAM users are created once
+var scramUsersOnce sync.Once
 
 var errSCRAMUsersCreate error
 
@@ -66,7 +66,7 @@ func createSCRAMUsers() error {
 			"--entity-name", cred.username,
 		}
 
-		cmd := exec.CommandContext(ctx, "podman", args...) //nolint:gosec // test-only: controlled args
+		cmd := exec.CommandContext(ctx, "podman", args...)
 		output, err := cmd.CombinedOutput()
 
 		cancel()
@@ -86,7 +86,7 @@ type saslMechanismConfig struct {
 	setup     func(t *testing.T)
 }
 
-var saslMechanisms = map[string]saslMechanismConfig{ //nolint:gochecknoglobals // test-only: static test config
+var saslMechanisms = map[string]saslMechanismConfig{
 	"PLAIN": {
 		mechanism: "PLAIN",
 		username:  saslUsername,

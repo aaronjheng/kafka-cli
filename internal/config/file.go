@@ -14,15 +14,16 @@ import (
 
 const configDirPermission = 0o755
 
-//nolint:gochecknoglobals // Shared immutable fallback config.
-var defaultConfig = &Config{
-	filepath:       "",
-	DefaultCluster: "default",
-	Clusters: map[string]*kafka.Config{
-		"default": {
-			Brokers: []string{"127.0.0.1:9092"},
+func defaultConfig() *Config {
+	return &Config{
+		filepath:       "",
+		DefaultCluster: "default",
+		Clusters: map[string]*kafka.Config{
+			"default": {
+				Brokers: []string{"127.0.0.1:9092"},
+			},
 		},
-	},
+	}
 }
 
 func LoadConfig(cfgFilepath string) (*Config, error) {
@@ -46,7 +47,7 @@ func LoadConfig(cfgFilepath string) (*Config, error) {
 	if err != nil {
 		var errNotFound viper.ConfigFileNotFoundError
 		if cfgFilepath == "" && errors.As(err, &errNotFound) {
-			return defaultConfig, nil
+			return defaultConfig(), nil
 		}
 
 		return nil, fmt.Errorf("viper.ReadInConfig error: %w", err)

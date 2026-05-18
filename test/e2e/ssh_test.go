@@ -12,7 +12,7 @@ const (
 	sshTestHost   = "127.0.0.1"
 )
 
-var sshKeyPath string //nolint:gochecknoglobals // test-only: set by TestMain
+var sshKeyPath string
 
 func TestMain(m *testing.M) {
 	sshKeyPath = os.Getenv(sshKeyPathEnv)

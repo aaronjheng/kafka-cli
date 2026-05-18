@@ -129,6 +129,11 @@ linters:
       - third_party$
       - builtin$
       - examples$
+    rules:
+      - linters:
+          - gochecknoglobals
+          - gosec
+        path: _test\.go$
 formatters:
   enable:
     - gci

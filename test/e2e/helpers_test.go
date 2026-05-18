@@ -34,7 +34,7 @@ func NewKafkaCLI(t *testing.T) *KafkaCLI {
 		binary = filepath.Join("..", "..", "kafka")
 	}
 
-	_, err := os.Stat(binary) //nolint:gosec // test-only: path from env var
+	_, err := os.Stat(binary)
 	if os.IsNotExist(err) {
 		t.Fatalf("kafka CLI binary not found at %s (set %s env var)", binary, kafkaCLIPathEnv)
 	}
@@ -62,7 +62,7 @@ func (k *KafkaCLI) Run(ctx context.Context, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, k.binary, allArgs...) //nolint:gosec // test-only: binary execution
+	cmd := exec.CommandContext(ctx, k.binary, allArgs...)
 
 	var stdout, stderr bytes.Buffer
 
@@ -83,7 +83,7 @@ func (k *KafkaCLI) RunWithStdin(ctx context.Context, stdin string, args ...strin
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, k.binary, allArgs...) //nolint:gosec // test-only: binary execution
+	cmd := exec.CommandContext(ctx, k.binary, allArgs...)
 
 	var stdout, stderr bytes.Buffer
 
@@ -121,7 +121,6 @@ func ProduceAndAssertConsumed(
 
 	consumerCmdArgs = append(consumerCmdArgs, consumeArgs...)
 
-	//nolint:gosec // test-only: controlled args
 	consumerCmd := exec.CommandContext(consumeCtx, cli.binary, consumerCmdArgs...)
 
 	var consumeStdout bytes.Buffer
