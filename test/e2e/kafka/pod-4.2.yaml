@@ -30,7 +30,7 @@ spec:
       mountPath: /config/sshd/sshd_config.d
 
   - name: kafka-ssh-test
-    image: docker.io/apache/kafka:4.2.0
+    image: docker.io/apache/kafka:PLACEHOLDER_KAFKA_VERSION
     ports:
     - containerPort: 9092
       hostPort: 9092
