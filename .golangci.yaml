@@ -14,11 +14,13 @@ linters:
     - bidichk
     - bodyclose
     - canonicalheader
+    - clickhouselint
     - containedctx
     - contextcheck
     - copyloopvar
     - cyclop
     - decorder
+    - depguard
     - dogsled
     - dupl
     - dupword
@@ -50,7 +52,7 @@ linters:
     - godox
     - goheader
     - gomoddirectives
-    - gomodguard
+    - gomodguard_v2
     - goprintffuncname
     - gosec
     - gosmopolitan
@@ -113,6 +115,13 @@ linters:
     - wsl_v5
     - zerologlint
   settings:
+    depguard:
+      rules:
+        main:
+          allow:
+            - $gostd
+            - github.com
+            - golang.org
     goconst:
       min-occurrences: 5
     exhaustruct:
