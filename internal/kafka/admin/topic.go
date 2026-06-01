@@ -8,6 +8,7 @@ import (
 	"maps"
 	"os"
 	"slices"
+	"strconv"
 
 	"github.com/IBM/sarama"
 )
@@ -29,26 +30,20 @@ func (a *Admin) ListTopics() error {
 
 	topics := slices.SortedStableFunc(maps.Keys(topicDetails), cmp.Compare)
 
-	table := newTable(os.Stdout)
-	table.Header([]any{"Topic", "Number of Partitions", "Replication Factor"})
+	tbl := newTable()
+	tbl.Headers("Topic", "Number of Partitions", "Replication Factor")
 
 	for _, topic := range topics {
 		topicDetail := topicDetails[topic]
 
-		err := table.Append([]any{
+		tbl.Row(
 			topic,
-			topicDetail.NumPartitions,
-			topicDetail.ReplicationFactor,
-		})
-		if err != nil {
-			return fmt.Errorf("table.Append error: %w", err)
-		}
+			strconv.FormatInt(int64(topicDetail.NumPartitions), 10),
+			strconv.FormatInt(int64(topicDetail.ReplicationFactor), 10),
+		)
 	}
 
-	err = table.Render()
-	if err != nil {
-		return fmt.Errorf("table.Render error: %w", err)
-	}
+	fmt.Fprintln(os.Stdout, tbl.Render())
 
 	fmt.Fprintf(os.Stdout, "Total topics: %d\n", len(topics))
 
@@ -111,29 +106,23 @@ func (a *Admin) DescribeTopic(topic string) error {
 }
 
 func (a *Admin) renderPartitionTable(partitions []*sarama.PartitionMetadata) error {
-	table := newTable(os.Stdout)
-	table.Header([]any{"Partition", "Leader", "Replicas", "ISR"})
+	tbl := newTable()
+	tbl.Headers("Partition", "Leader", "Replicas", "ISR")
 
 	slices.SortStableFunc(partitions, func(a, b *sarama.PartitionMetadata) int {
 		return cmp.Compare(a.ID, b.ID)
 	})
 
 	for _, partition := range partitions {
-		err := table.Append([]any{
-			partition.ID,
-			partition.Leader,
-			partition.Replicas,
-			partition.Isr,
-		})
-		if err != nil {
-			return fmt.Errorf("table.Append error: %w", err)
-		}
+		tbl.Row(
+			strconv.FormatInt(int64(partition.ID), 10),
+			strconv.FormatInt(int64(partition.Leader), 10),
+			fmt.Sprint(partition.Replicas),
+			fmt.Sprint(partition.Isr),
+		)
 	}
 
-	err := table.Render()
-	if err != nil {
-		return fmt.Errorf("table.Render error: %w", err)
-	}
+	fmt.Fprintln(os.Stdout, tbl.Render())
 
 	return nil
 }
@@ -231,8 +220,8 @@ func (a *Admin) GetOffsets(topic string) error {
 
 	slices.Sort(partitions)
 
-	table := newTable(os.Stdout)
-	table.Header([]any{"Partition", "Oldest Offset", "Newest Offset"})
+	tbl := newTable()
+	tbl.Headers("Partition", "Oldest Offset", "Newest Offset")
 
 	for _, partition := range partitions {
 		oldest, err := a.client.GetOffset(topic, partition, sarama.OffsetOldest)
@@ -245,16 +234,14 @@ func (a *Admin) GetOffsets(topic string) error {
 			return fmt.Errorf("client.GetOffset error: %w", err)
 		}
 
-		err = table.Append([]any{partition, oldest, newest})
-		if err != nil {
-			return fmt.Errorf("table.Append error: %w", err)
-		}
+		tbl.Row(
+			strconv.FormatInt(int64(partition), 10),
+			strconv.FormatInt(oldest, 10),
+			strconv.FormatInt(newest, 10),
+		)
 	}
 
-	err = table.Render()
-	if err != nil {
-		return fmt.Errorf("table.Render error: %w", err)
-	}
+	fmt.Fprintln(os.Stdout, tbl.Render())
 
 	return nil
 }

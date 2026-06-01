@@ -9,7 +9,6 @@ words: []
 ignoreWords:
   - SASL
   - cafile
-  - olekukonko
   - sarama
   - unconvert
   - golangci
@@ -25,7 +24,7 @@ ignoreWords:
   - aaronjheng
   - dotenv
   - compinit
-  - tablewriter
+  - lipgloss
   - mapstructure
   - adrg
   - localmodule

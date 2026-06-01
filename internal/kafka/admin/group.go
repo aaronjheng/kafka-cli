@@ -8,6 +8,7 @@ import (
 	"maps"
 	"os"
 	"slices"
+	"strconv"
 
 	"github.com/IBM/sarama"
 )
@@ -36,20 +37,14 @@ func (a *Admin) ListConsumerGroups() error {
 		return cmp.Compare(a.GroupId, b.GroupId)
 	})
 
-	table := newTable(os.Stdout)
-	table.Header([]string{"Consumer Group", "State", "Protocol Type", "Protocol", "Members"})
+	tbl := newTable()
+	tbl.Headers("Consumer Group", "State", "Protocol Type", "Protocol", "Members")
 
 	for _, detail := range details {
-		err := table.Append([]any{detail.GroupId, detail.State, detail.ProtocolType, detail.Protocol, len(detail.Members)})
-		if err != nil {
-			return fmt.Errorf("table.Append error: %w", err)
-		}
+		tbl.Row(detail.GroupId, detail.State, detail.ProtocolType, detail.Protocol, strconv.Itoa(len(detail.Members)))
 	}
 
-	err = table.Render()
-	if err != nil {
-		return fmt.Errorf("table.Render error: %w", err)
-	}
+	fmt.Fprintln(os.Stdout, tbl.Render())
 
 	return nil
 }
@@ -108,20 +103,14 @@ func (a *Admin) DescribeConsumerGroup(group string) error {
 }
 
 func (a *Admin) renderGroupMembersTable(members map[string]*sarama.GroupMemberDescription) error {
-	table := newTable(os.Stdout)
-	table.Header([]any{"Member ID", "Client ID", "Client Host"})
+	tbl := newTable()
+	tbl.Headers("Member ID", "Client ID", "Client Host")
 
 	for _, member := range members {
-		err := table.Append([]any{member.MemberId, member.ClientId, member.ClientHost})
-		if err != nil {
-			return fmt.Errorf("table.Append error: %w", err)
-		}
+		tbl.Row(member.MemberId, member.ClientId, member.ClientHost)
 	}
 
-	err := table.Render()
-	if err != nil {
-		return fmt.Errorf("table.Render error: %w", err)
-	}
+	fmt.Fprintln(os.Stdout, tbl.Render())
 
 	return nil
 }
@@ -190,8 +179,8 @@ func (a *Admin) renderTopicOffsetsTable(
 	partitions partitionOffsetResponse,
 	owners map[int32]partitionOwner,
 ) error {
-	table := newTable(os.Stdout)
-	table.Header([]any{"Partition", "Current Offset", "Log End Offset", "Lag", "Consumer ID", "Host"})
+	tbl := newTable()
+	tbl.Headers("Partition", "Current Offset", "Log End Offset", "Lag", "Consumer ID", "Host")
 
 	partitionIDs := slices.SortedStableFunc(maps.Keys(partitions), cmp.Compare)
 
@@ -212,16 +201,17 @@ func (a *Admin) renderTopicOffsetsTable(
 			host = owner.clientHost
 		}
 
-		err = table.Append([]any{partitionID, block.Offset, endOffset, lag, consumerID, host})
-		if err != nil {
-			return fmt.Errorf("table.Append error: %w", err)
-		}
+		tbl.Row(
+			strconv.FormatInt(int64(partitionID), 10),
+			strconv.FormatInt(block.Offset, 10),
+			strconv.FormatInt(endOffset, 10),
+			strconv.FormatInt(lag, 10),
+			consumerID,
+			host,
+		)
 	}
 
-	err := table.Render()
-	if err != nil {
-		return fmt.Errorf("table.Render error: %w", err)
-	}
+	fmt.Fprintln(os.Stdout, tbl.Render())
 
 	return nil
 }

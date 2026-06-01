@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strconv"
 
 	"github.com/IBM/sarama"
 )
@@ -50,8 +51,8 @@ func (a *Admin) DescribeCluster() error {
 }
 
 func renderBrokerTable(brokers []*sarama.Broker, controllerID int32) error {
-	table := newTable(os.Stdout)
-	table.Header([]any{"ID", "Address", "Rack", "Type"})
+	tbl := newTable()
+	tbl.Headers("ID", "Address", "Rack", "Type")
 
 	slices.SortStableFunc(brokers, func(a, b *sarama.Broker) int {
 		return cmp.Compare(a.ID(), b.ID())
@@ -68,16 +69,10 @@ func renderBrokerTable(brokers []*sarama.Broker, controllerID int32) error {
 			brokerType = "controller"
 		}
 
-		err := table.Append([]any{broker.ID(), broker.Addr(), rack, brokerType})
-		if err != nil {
-			return fmt.Errorf("table.Append error: %w", err)
-		}
+		tbl.Row(strconv.FormatInt(int64(broker.ID()), 10), broker.Addr(), rack, brokerType)
 	}
 
-	err := table.Render()
-	if err != nil {
-		return fmt.Errorf("table.Render error: %w", err)
-	}
+	fmt.Fprintln(os.Stdout, tbl.Render())
 
 	return nil
 }

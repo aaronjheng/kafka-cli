@@ -120,6 +120,7 @@ linters:
         main:
           allow:
             - $gostd
+            - charm.land
             - github.com
             - golang.org
     goconst:

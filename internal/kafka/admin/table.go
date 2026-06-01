@@ -1,34 +1,26 @@
 package admin
 
 import (
-	"io"
-
-	"github.com/fatih/color"
-	"github.com/olekukonko/tablewriter"
-	"github.com/olekukonko/tablewriter/renderer"
-	"github.com/olekukonko/tablewriter/tw"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/table"
 )
 
-func newTable(out io.Writer) *tablewriter.Table {
-	table := tablewriter.NewWriter(out)
-	table.Options(tablewriter.WithRenderer(renderer.NewColorized(renderer.ColorizedConfig{
-		Border: renderer.Tint{
-			FG: renderer.Colors{color.FgHiBlack},
-		},
-		Separator: renderer.Tint{
-			FG: renderer.Colors{color.FgHiBlack},
-		},
-		Header: renderer.Tint{
-			FG: renderer.Colors{color.Reset},
-		},
-		Column: renderer.Tint{
-			FG: renderer.Colors{color.Reset},
-		},
-		Footer: renderer.Tint{
-			FG: renderer.Colors{color.Reset},
-		},
-		Symbols: tw.NewSymbols(tw.StyleLight),
-	})))
-
-	return table
+func newTable() *table.Table {
+	return table.New().
+		StyleFunc(func(row, _ int) lipgloss.Style {
+			switch row {
+			case table.HeaderRow:
+				return lipgloss.NewStyle().Bold(true).Padding(0, 1)
+			default:
+				return lipgloss.NewStyle().Padding(0, 1)
+			}
+		}).
+		Border(lipgloss.NormalBorder()).
+		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("240"))).
+		BorderHeader(true).
+		BorderColumn(true).
+		BorderBottom(true).
+		BorderLeft(true).
+		BorderRight(true).
+		BorderTop(true)
 }
