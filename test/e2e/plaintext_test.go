@@ -172,16 +172,16 @@ clusters:
 		t.Fatalf("get-offsets failed: %v", err)
 	}
 
-	if !StringsContains(output, "PARTITION") {
-		t.Errorf("expected 'PARTITION' in output, got: %s", output)
+	if !StringsContains(output, "Partition") {
+		t.Errorf("expected 'Partition' in output, got: %s", output)
 	}
 
-	if !StringsContains(output, "OLDEST OFFSET") {
-		t.Errorf("expected 'OLDEST OFFSET' in output, got: %s", output)
+	if !StringsContains(output, "Oldest Offset") {
+		t.Errorf("expected 'Oldest Offset' in output, got: %s", output)
 	}
 
-	if !StringsContains(output, "NEWEST OFFSET") {
-		t.Errorf("expected 'NEWEST OFFSET' in output, got: %s", output)
+	if !StringsContains(output, "Newest Offset") {
+		t.Errorf("expected 'Newest Offset' in output, got: %s", output)
 	}
 }
 
