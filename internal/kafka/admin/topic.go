@@ -221,7 +221,7 @@ func (a *Admin) GetOffsets(topic string) error {
 	slices.Sort(partitions)
 
 	tbl := newTable()
-	tbl.Headers("Partition", "Oldest Offset", "Newest Offset")
+	tbl.Headers("PARTITION", "OLDEST OFFSET", "NEWEST OFFSET")
 
 	for _, partition := range partitions {
 		oldest, err := a.client.GetOffset(topic, partition, sarama.OffsetOldest)
