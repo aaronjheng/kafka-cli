@@ -3,11 +3,16 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aaronjheng/kafka-cli/internal/kafka"
 )
 
-var errClusterProfileNotFound = errors.New("cluster profile not found")
+var (
+	errClusterProfileNotFound = errors.New("cluster profile not found")
+	errDefaultClusterNotSet   = errors.New("default cluster is not set")
+	errNoClustersConfigured   = errors.New("no clusters configured")
+)
 
 type Config struct {
 	filepath       string
@@ -30,4 +35,31 @@ func (c *Config) Cluster(profile string) (*kafka.Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func (c *Config) Validate() error {
+	if strings.TrimSpace(c.DefaultCluster) == "" {
+		return errDefaultClusterNotSet
+	}
+
+	if len(c.Clusters) == 0 {
+		return errNoClustersConfigured
+	}
+
+	for name, cluster := range c.Clusters {
+		if cluster == nil {
+			return fmt.Errorf("cluster %q: %w", name, kafka.ErrConfigRequired)
+		}
+
+		err := cluster.Validate()
+		if err != nil {
+			return fmt.Errorf("cluster %q: %w", name, err)
+		}
+	}
+
+	if _, ok := c.Clusters[c.DefaultCluster]; !ok {
+		return fmt.Errorf("%w: %s", errClusterProfileNotFound, c.DefaultCluster)
+	}
+
+	return nil
 }

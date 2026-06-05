@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/adrg/xdg"
 	"github.com/spf13/viper"
@@ -27,23 +27,24 @@ func defaultConfig() *Config {
 }
 
 func LoadConfig(cfgFilepath string) (*Config, error) {
-	cfgRoot := path.Join(xdg.ConfigHome, "kafka")
+	cfgRoot := filepath.Join(xdg.ConfigHome, "kafka")
 
-	err := os.MkdirAll(cfgRoot, configDirPermission)
-	if err != nil {
-		return nil, fmt.Errorf("os.MkdirAll error: %w", err)
-	}
-
+	viperConfig := viper.New()
 	if cfgFilepath != "" {
-		viper.SetConfigFile(cfgFilepath)
+		viperConfig.SetConfigFile(cfgFilepath)
 	} else {
-		viper.SetConfigName("kafka")
-		viper.SetConfigType("yaml")
-		viper.AddConfigPath(".")
-		viper.AddConfigPath(cfgRoot)
+		err := os.MkdirAll(cfgRoot, configDirPermission)
+		if err != nil {
+			return nil, fmt.Errorf("os.MkdirAll error: %w", err)
+		}
+
+		viperConfig.SetConfigName("kafka")
+		viperConfig.SetConfigType("yaml")
+		viperConfig.AddConfigPath(".")
+		viperConfig.AddConfigPath(cfgRoot)
 	}
 
-	err = viper.ReadInConfig()
+	err := viperConfig.ReadInConfig()
 	if err != nil {
 		var errNotFound viper.ConfigFileNotFoundError
 		if cfgFilepath == "" && errors.As(err, &errNotFound) {
@@ -54,14 +55,19 @@ func LoadConfig(cfgFilepath string) (*Config, error) {
 	}
 
 	cfg := &Config{
-		filepath:       viper.GetViper().ConfigFileUsed(),
+		filepath:       viperConfig.ConfigFileUsed(),
 		DefaultCluster: "",
 		Clusters:       nil,
 	}
 
-	err = viper.Unmarshal(cfg)
+	err = viperConfig.Unmarshal(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("viper.Unmarshal error: %w", err)
+	}
+
+	err = cfg.Validate()
+	if err != nil {
+		return nil, fmt.Errorf("config validation error: %w", err)
 	}
 
 	return cfg, nil

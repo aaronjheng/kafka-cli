@@ -35,6 +35,8 @@ func NewFromConfig(cfg *config.Config, clusterName string) (*Admin, func(context
 
 	clusterAdmin, err := sarama.NewClusterAdminFromClient(cluster)
 	if err != nil {
+		_ = cluster.Close()
+
 		return nil, nil, fmt.Errorf("newClusterAdmin error: %w", err)
 	}
 

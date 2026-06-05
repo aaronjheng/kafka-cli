@@ -20,54 +20,97 @@ type Kafka struct {
 	sarama.Client
 }
 
+var errInvalidTLSCA = errors.New("invalid TLS CA")
+
 func newSaramaConfig(clusterConfig *Config) (*sarama.Config, error) {
+	err := clusterConfig.Validate()
+	if err != nil {
+		return nil, fmt.Errorf("cluster config validation error: %w", err)
+	}
+
 	saramaCfg := sarama.NewConfig()
-	if clusterConfig.TLS != nil {
-		saramaCfg.Net.TLS.Enable = true
 
-		raw, err := os.ReadFile(clusterConfig.TLS.CAFile)
-		if err != nil {
-			return nil, fmt.Errorf("os.ReadFile error: %w", err)
-		}
-
-		certPool := x509.NewCertPool()
-		certPool.AppendCertsFromPEM(raw)
-		saramaCfg.Net.TLS.Config = &tls.Config{
-			RootCAs: certPool,
-			// #nosec G402 -- user-controlled option for self-signed/dev clusters.
-			InsecureSkipVerify: clusterConfig.TLS.Insecure,
-		}
+	err = configureTLS(saramaCfg, clusterConfig.TLS)
+	if err != nil {
+		return nil, fmt.Errorf("configureTLS error: %w", err)
 	}
 
-	if clusterConfig.SASL != nil {
-		saramaCfg.Net.SASL.Enable = true
-		saramaCfg.Net.SASL.Mechanism = sarama.SASLMechanism(clusterConfig.SASL.Mechanism)
-		saramaCfg.Net.SASL.User = clusterConfig.SASL.Username
-		saramaCfg.Net.SASL.Password = clusterConfig.SASL.Password
+	configureSASL(saramaCfg, clusterConfig.SASL)
 
-		switch strings.ToUpper(clusterConfig.SASL.Mechanism) {
-		case "SCRAM-SHA-256":
-			saramaCfg.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
-				return newSaramaSCRAMClient(scram.SHA256)
-			}
-		case "SCRAM-SHA-512":
-			saramaCfg.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
-				return newSaramaSCRAMClient(scram.SHA512)
-			}
-		}
-	}
-
-	if clusterConfig.SSH != nil {
-		dialer, err := ssh.NewDialerFunc(clusterConfig.SSH)
-		if err != nil {
-			return nil, fmt.Errorf("ssh.NewDialerFunc error: %w", err)
-		}
-
-		saramaCfg.Net.Proxy.Enable = true
-		saramaCfg.Net.Proxy.Dialer = dialer
+	err = configureSSH(saramaCfg, clusterConfig.SSH)
+	if err != nil {
+		return nil, fmt.Errorf("configureSSH error: %w", err)
 	}
 
 	return saramaCfg, nil
+}
+
+func configureTLS(saramaCfg *sarama.Config, tlsConfig *TLS) error {
+	if tlsConfig == nil {
+		return nil
+	}
+
+	saramaCfg.Net.TLS.Enable = true
+	saramaCfg.Net.TLS.Config = &tls.Config{
+		// #nosec G402 -- user-controlled option for self-signed/dev clusters.
+		InsecureSkipVerify: tlsConfig.Insecure,
+	}
+
+	if tlsConfig.CAFile == "" {
+		return nil
+	}
+
+	raw, err := os.ReadFile(tlsConfig.CAFile)
+	if err != nil {
+		return fmt.Errorf("os.ReadFile error: %w", err)
+	}
+
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(raw) {
+		return fmt.Errorf("parse TLS CA file %q: %w", tlsConfig.CAFile, errInvalidTLSCA)
+	}
+
+	saramaCfg.Net.TLS.Config.RootCAs = certPool
+
+	return nil
+}
+
+func configureSASL(saramaCfg *sarama.Config, saslConfig *SASL) {
+	if saslConfig == nil {
+		return
+	}
+
+	saramaCfg.Net.SASL.Enable = true
+	saramaCfg.Net.SASL.Mechanism = sarama.SASLMechanism(saslConfig.Mechanism)
+	saramaCfg.Net.SASL.User = saslConfig.Username
+	saramaCfg.Net.SASL.Password = saslConfig.Password
+
+	switch strings.ToUpper(saslConfig.Mechanism) {
+	case "SCRAM-SHA-256":
+		saramaCfg.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
+			return newSaramaSCRAMClient(scram.SHA256)
+		}
+	case "SCRAM-SHA-512":
+		saramaCfg.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
+			return newSaramaSCRAMClient(scram.SHA512)
+		}
+	}
+}
+
+func configureSSH(saramaCfg *sarama.Config, sshConfig *ssh.Config) error {
+	if sshConfig == nil {
+		return nil
+	}
+
+	dialer, err := ssh.NewDialerFunc(sshConfig)
+	if err != nil {
+		return fmt.Errorf("ssh.NewDialerFunc error: %w", err)
+	}
+
+	saramaCfg.Net.Proxy.Enable = true
+	saramaCfg.Net.Proxy.Dialer = dialer
+
+	return nil
 }
 
 func New(clusterConfig *Config) (*Kafka, error) {
