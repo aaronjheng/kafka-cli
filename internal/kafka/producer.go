@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -10,7 +11,10 @@ import (
 	"github.com/IBM/sarama"
 )
 
-const keyValueParts = 2
+const (
+	keyValueParts        = 2
+	scannerMaxBufferSize = 1024 * 1024
+)
 
 func RunTopicProduce(clusterCfg *Config, topic string, keySeparator string) error {
 	producer, err := NewSyncProducer(clusterCfg)
@@ -26,6 +30,10 @@ func RunTopicProduce(clusterCfg *Config, topic string, keySeparator string) erro
 	}()
 
 	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Buffer(make([]byte, 0, bufio.MaxScanTokenSize), scannerMaxBufferSize)
+
+	var sendErr error
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -49,7 +57,17 @@ func RunTopicProduce(clusterCfg *Config, topic string, keySeparator string) erro
 		_, _, err := producer.SendMessage(msg)
 		if err != nil {
 			slog.Error("producer.SendMessage failed", slog.Any("error", err))
+			sendErr = errors.Join(sendErr, err)
 		}
+	}
+
+	err = scanner.Err()
+	if err != nil {
+		return fmt.Errorf("scan stdin error: %w", err)
+	}
+
+	if sendErr != nil {
+		return fmt.Errorf("producer.SendMessage error: %w", sendErr)
 	}
 
 	return nil
