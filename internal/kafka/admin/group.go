@@ -50,24 +50,9 @@ func (a *Admin) ListConsumerGroups() error {
 }
 
 func (a *Admin) DescribeConsumerGroup(group string) error {
-	details, err := a.clusterAdmin.DescribeConsumerGroups([]string{group})
+	desc, err := a.describeConsumerGroup(group)
 	if err != nil {
-		return fmt.Errorf("clusterAdmin.DescribeConsumerGroups error: %w", err)
-	}
-
-	if len(details) == 0 {
-		return fmt.Errorf("%w: %s", errConsumerGroupNotFound, group)
-	}
-
-	desc := details[0]
-
-	if desc.State == "Dead" {
-		return fmt.Errorf("%w: %s", errConsumerGroupNotFound, group)
-	}
-
-	offsetResp, err := a.clusterAdmin.ListConsumerGroupOffsets(group, nil)
-	if err != nil {
-		return fmt.Errorf("clusterAdmin.ListConsumerGroupOffsets error: %w", err)
+		return err
 	}
 
 	fmt.Fprintf(os.Stdout, "Consumer Group: %s\n", desc.GroupId)
@@ -88,18 +73,126 @@ func (a *Admin) DescribeConsumerGroup(group string) error {
 		fmt.Fprintln(os.Stdout)
 	}
 
-	if len(offsetResp.Blocks) > 0 {
-		fmt.Fprintln(os.Stdout, "Offsets")
+	return nil
+}
 
-		assignments := a.buildPartitionAssignments(desc.Members)
-
-		err = a.renderGroupOffsetsTable(offsetResp.Blocks, assignments)
-		if err != nil {
-			return err
-		}
+func (a *Admin) describeConsumerGroup(group string) (*sarama.GroupDescription, error) {
+	details, err := a.clusterAdmin.DescribeConsumerGroups([]string{group})
+	if err != nil {
+		return nil, fmt.Errorf("clusterAdmin.DescribeConsumerGroups error: %w", err)
 	}
 
+	if len(details) == 0 || details[0].State == "Dead" {
+		return nil, fmt.Errorf("%w: %s", errConsumerGroupNotFound, group)
+	}
+
+	return details[0], nil
+}
+
+func (a *Admin) ListConsumerGroupOffsets(group string, topic string) error {
+	desc, offsetResp, partitionsByTopic, err := a.consumerGroupOffsets(group, topic)
+	if err != nil {
+		return err
+	}
+
+	partitions, endOffsets, err := a.buildGroupOffsetLookups(offsetResp.Blocks, partitionsByTopic)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(os.Stdout, "Consumer Group: %s\n", desc.GroupId)
+	fmt.Fprintln(os.Stdout)
+
+	assignments := a.buildPartitionAssignments(desc.Members)
+	renderGroupOffsetsTable(offsetResp.Blocks, assignments, partitions, endOffsets)
+
 	return nil
+}
+
+func (a *Admin) ListConsumerGroupLag(group string, topic string) error {
+	desc, offsetResp, partitionsByTopic, err := a.consumerGroupOffsets(group, topic)
+	if err != nil {
+		return err
+	}
+
+	partitions, endOffsets, err := a.buildGroupOffsetLookups(offsetResp.Blocks, partitionsByTopic)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(os.Stdout, "Consumer Group: %s\n", desc.GroupId)
+	fmt.Fprintln(os.Stdout)
+
+	renderGroupLagSummary(offsetResp.Blocks, partitions, endOffsets)
+
+	fmt.Fprintln(os.Stdout)
+	fmt.Fprintln(os.Stdout, "Partitions")
+
+	assignments := a.buildPartitionAssignments(desc.Members)
+	renderGroupOffsetsTable(offsetResp.Blocks, assignments, partitions, endOffsets)
+
+	return nil
+}
+
+func (a *Admin) consumerGroupOffsets(
+	group string,
+	topic string,
+) (*sarama.GroupDescription, *sarama.OffsetFetchResponse, topicPartitionIDs, error) {
+	desc, err := a.describeConsumerGroup(group)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	partitionsByTopic := make(topicPartitionIDs)
+
+	var requestedPartitions map[string][]int32
+
+	if topic != "" {
+		partitions, err := a.topicPartitions(topic)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		partitionsByTopic[topic] = partitions
+		requestedPartitions = partitionsByTopic
+	}
+
+	offsetResp, err := a.clusterAdmin.ListConsumerGroupOffsets(group, requestedPartitions)
+	if err != nil {
+		if errors.Is(err, sarama.ErrGroupIDNotFound) {
+			return nil, nil, nil, fmt.Errorf("%w: %s", errConsumerGroupNotFound, group)
+		}
+
+		return nil, nil, nil, fmt.Errorf("clusterAdmin.ListConsumerGroupOffsets error: %w", err)
+	}
+
+	return desc, offsetResp, partitionsByTopic, nil
+}
+
+func (a *Admin) buildGroupOffsetLookups(
+	blocks topicPartitionOffsets,
+	requestedPartitions topicPartitionIDs,
+) (topicPartitionIDs, topicPartitionEndOffsets, error) {
+	partitionsByTopic := make(topicPartitionIDs, len(blocks))
+	endOffsetsByTopic := make(topicPartitionEndOffsets, len(blocks))
+	topics := slices.SortedStableFunc(maps.Keys(blocks), cmp.Compare)
+
+	for _, topic := range topics {
+		partitions := requestedPartitions[topic]
+		if len(partitions) == 0 {
+			partitions = slices.SortedStableFunc(maps.Keys(blocks[topic]), cmp.Compare)
+		}
+
+		endOffsets, err := a.topicEndOffsets(topic, partitions)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		partitionsByTopic[topic] = partitions
+		endOffsetsByTopic[topic] = endOffsets
+	}
+
+	return partitionsByTopic, endOffsetsByTopic, nil
 }
 
 func (a *Admin) renderGroupMembersTable(members map[string]*sarama.GroupMemberDescription) error {
@@ -116,10 +209,12 @@ func (a *Admin) renderGroupMembersTable(members map[string]*sarama.GroupMemberDe
 }
 
 type (
-	topicPartitionOffsets   = map[string]map[int32]*sarama.OffsetFetchResponseBlock
-	topicPartitionOwners    = map[string]map[int32]partitionOwner
-	memberDescriptions      = map[string]*sarama.GroupMemberDescription
-	partitionOffsetResponse = map[int32]*sarama.OffsetFetchResponseBlock
+	topicPartitionOffsets    = map[string]map[int32]*sarama.OffsetFetchResponseBlock
+	topicPartitionOwners     = map[string]map[int32]partitionOwner
+	topicPartitionIDs        = map[string][]int32
+	topicPartitionEndOffsets = map[string]map[int32]int64
+	memberDescriptions       = map[string]*sarama.GroupMemberDescription
+	partitionOffsetResponse  = map[int32]*sarama.OffsetFetchResponseBlock
 )
 
 type partitionOwner struct {
@@ -153,7 +248,43 @@ func (a *Admin) buildPartitionAssignments(members memberDescriptions) topicParti
 	return assignments
 }
 
-func (a *Admin) renderGroupOffsetsTable(blocks topicPartitionOffsets, assignments topicPartitionOwners) error {
+func renderGroupLagSummary(
+	blocks topicPartitionOffsets,
+	partitionsByTopic topicPartitionIDs,
+	endOffsetsByTopic topicPartitionEndOffsets,
+) {
+	tbl := newTable()
+	tbl.Headers("Topic", "Current Offset", "Log End Offset", "Lag")
+
+	topics := slices.SortedStableFunc(maps.Keys(blocks), cmp.Compare)
+
+	for _, topic := range topics {
+		currentOffset, logEndOffset, lag, ok := summarizeOffsetsLag(
+			partitionsByTopic[topic],
+			blocks[topic],
+			endOffsetsByTopic[topic],
+		)
+		if !ok {
+			continue
+		}
+
+		tbl.Row(
+			topic,
+			strconv.FormatInt(currentOffset, 10),
+			strconv.FormatInt(logEndOffset, 10),
+			strconv.FormatInt(lag, 10),
+		)
+	}
+
+	fmt.Fprintln(os.Stdout, tbl.Render())
+}
+
+func renderGroupOffsetsTable(
+	blocks topicPartitionOffsets,
+	assignments topicPartitionOwners,
+	partitionsByTopic topicPartitionIDs,
+	endOffsetsByTopic topicPartitionEndOffsets,
+) {
 	topics := slices.SortedStableFunc(maps.Keys(blocks), cmp.Compare)
 
 	for i, topic := range topics {
@@ -163,36 +294,32 @@ func (a *Admin) renderGroupOffsetsTable(blocks topicPartitionOffsets, assignment
 
 		fmt.Fprintf(os.Stdout, "Topic: %s\n", topic)
 
-		partitions := blocks[topic]
-
-		err := a.renderTopicOffsetsTable(topic, partitions, assignments[topic])
-		if err != nil {
-			return err
-		}
+		renderTopicOffsetsTable(
+			blocks[topic],
+			partitionsByTopic[topic],
+			assignments[topic],
+			endOffsetsByTopic[topic],
+		)
 	}
-
-	return nil
 }
 
-func (a *Admin) renderTopicOffsetsTable(
-	topic string,
+func renderTopicOffsetsTable(
 	partitions partitionOffsetResponse,
+	partitionIDs []int32,
 	owners map[int32]partitionOwner,
-) error {
+	endOffsets map[int32]int64,
+) {
 	tbl := newTable()
 	tbl.Headers("Partition", "Current Offset", "Log End Offset", "Lag", "Consumer ID", "Host")
 
-	partitionIDs := slices.SortedStableFunc(maps.Keys(partitions), cmp.Compare)
-
 	for _, partitionID := range partitionIDs {
 		block := partitions[partitionID]
-
-		endOffset, err := a.client.GetOffset(topic, partitionID, sarama.OffsetNewest)
-		if err != nil {
-			return fmt.Errorf("client.GetOffset error: %w", err)
+		if block == nil || block.Offset < 0 {
+			continue
 		}
 
-		lag := endOffset - block.Offset
+		endOffset := endOffsets[partitionID]
+		lag := max(endOffset-block.Offset, 0)
 
 		var consumerID, host string
 
@@ -212,8 +339,6 @@ func (a *Admin) renderTopicOffsetsTable(
 	}
 
 	fmt.Fprintln(os.Stdout, tbl.Render())
-
-	return nil
 }
 
 var errConsumerGroupNotFound = errors.New("consumer group not found")

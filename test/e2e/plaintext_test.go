@@ -269,9 +269,42 @@ clusters:
 		t.Errorf("expected 'State:' in output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Offsets") {
-		t.Errorf("expected 'Offsets' in output, got: %s", output)
+	if !StringsContains(output, "Members:") {
+		t.Errorf("expected 'Members:' in output, got: %s", output)
 	}
+}
+
+func TestGroupOffsetsAndLag_PlainText(t *testing.T) {
+	t.Parallel()
+
+	cli := NewKafkaCLI(t)
+	cli.WriteConfig(t, `
+default_cluster: local
+
+clusters:
+  local:
+    brokers:
+      - 127.0.0.1:9092
+`)
+
+	WaitForKafka(t, cli)
+
+	topic := UniqueTopicName(t)
+	group := UniqueGroupName(t)
+
+	_, err := cli.Run(t.Context(), "topic", "create", topic, "--partitions", "1", "--replication-factor", "1")
+	if err != nil {
+		t.Fatalf("create topic failed: %v", err)
+	}
+
+	t.Cleanup(func() {
+		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
+	})
+
+	ProduceAndConsumeWithGroup(t, cli, topic, group, []string{"hello-group-lag"})
+
+	AssertGroupOffsetsForTopic(t, cli, group, topic)
+	AssertGroupLagForTopic(t, cli, group, topic)
 }
 
 func TestGroupDelete_PlainText(t *testing.T) {

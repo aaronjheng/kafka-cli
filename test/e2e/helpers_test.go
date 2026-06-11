@@ -223,6 +223,68 @@ func ProduceAndConsumeWithGroup(
 	}
 }
 
+func AssertGroupLagForTopic(t *testing.T, cli *KafkaCLI, group string, topic string) {
+	t.Helper()
+
+	output, err := cli.Run(t.Context(), "group", "lag", group, "--topic", topic)
+	if err != nil {
+		t.Fatalf("group lag with topic filter failed: %v", err)
+	}
+
+	if !StringsContains(output, group) {
+		t.Errorf("expected group %q in group lag output, got: %s", group, output)
+	}
+
+	if !StringsContains(output, topic) {
+		t.Errorf("expected topic %q in group lag output, got: %s", topic, output)
+	}
+
+	if !StringsContains(output, "Lag") {
+		t.Errorf("expected 'Lag' in group lag output, got: %s", output)
+	}
+
+	if !StringsContains(output, "Partitions") {
+		t.Errorf("expected 'Partitions' in group lag output, got: %s", output)
+	}
+
+	if !StringsContains(output, "Partition") {
+		t.Errorf("expected 'Partition' in group lag output, got: %s", output)
+	}
+}
+
+func AssertGroupOffsetsForTopic(t *testing.T, cli *KafkaCLI, group string, topic string) {
+	t.Helper()
+
+	output, err := cli.Run(t.Context(), "group", "offsets", group, "--topic", topic)
+	if err != nil {
+		t.Fatalf("group offsets with topic filter failed: %v", err)
+	}
+
+	if !StringsContains(output, group) {
+		t.Errorf("expected group %q in group offsets output, got: %s", group, output)
+	}
+
+	if !StringsContains(output, topic) {
+		t.Errorf("expected topic %q in group offsets output, got: %s", topic, output)
+	}
+
+	if !StringsContains(output, "Partition") {
+		t.Errorf("expected 'Partition' in group offsets output, got: %s", output)
+	}
+
+	if !StringsContains(output, "Current Offset") {
+		t.Errorf("expected 'Current Offset' in group offsets output, got: %s", output)
+	}
+
+	if !StringsContains(output, "Log End Offset") {
+		t.Errorf("expected 'Log End Offset' in group offsets output, got: %s", output)
+	}
+
+	if !StringsContains(output, "Lag") {
+		t.Errorf("expected 'Lag' in group offsets output, got: %s", output)
+	}
+}
+
 func consumeGroupErrors(ctx context.Context, client sarama.ConsumerGroup) {
 	for {
 		select {

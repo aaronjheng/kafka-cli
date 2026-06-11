@@ -9,9 +9,12 @@ import (
 	"os"
 	"slices"
 	"strconv"
+	"sync"
 
 	"github.com/IBM/sarama"
 )
+
+const offsetLookupConcurrency = 16
 
 func (a *Admin) ListTopicNames() ([]string, error) {
 	topicDetails, err := a.clusterAdmin.ListTopics()
@@ -204,21 +207,10 @@ func formatSize(bytes int64) string {
 }
 
 func (a *Admin) GetOffsets(topic string) error {
-	topicDetails, err := a.clusterAdmin.ListTopics()
+	partitions, err := a.topicPartitions(topic)
 	if err != nil {
-		return fmt.Errorf("clusterAdmin.ListTopics error: %w", err)
+		return err
 	}
-
-	if _, ok := topicDetails[topic]; !ok {
-		return fmt.Errorf("%w: %s", errTopicNotFound, topic)
-	}
-
-	partitions, err := a.client.Partitions(topic)
-	if err != nil {
-		return fmt.Errorf("client.Partitions error: %w", err)
-	}
-
-	slices.Sort(partitions)
 
 	tbl := newTable()
 	tbl.Headers("Partition", "Oldest Offset", "Newest Offset")
@@ -244,6 +236,108 @@ func (a *Admin) GetOffsets(topic string) error {
 	fmt.Fprintln(os.Stdout, tbl.Render())
 
 	return nil
+}
+
+func (a *Admin) topicPartitions(topic string) ([]int32, error) {
+	topicDetails, err := a.clusterAdmin.ListTopics()
+	if err != nil {
+		return nil, fmt.Errorf("clusterAdmin.ListTopics error: %w", err)
+	}
+
+	if _, ok := topicDetails[topic]; !ok {
+		return nil, fmt.Errorf("%w: %s", errTopicNotFound, topic)
+	}
+
+	partitions, err := a.client.Partitions(topic)
+	if err != nil {
+		return nil, fmt.Errorf("client.Partitions error: %w", err)
+	}
+
+	slices.Sort(partitions)
+
+	return partitions, nil
+}
+
+func (a *Admin) topicEndOffsets(topic string, partitions []int32) (map[int32]int64, error) {
+	endOffsets := make(map[int32]int64, len(partitions))
+	if len(partitions) == 0 {
+		return endOffsets, nil
+	}
+
+	jobs := make(chan int32)
+	results := make(chan offsetLookupResult, len(partitions))
+	workerCount := min(len(partitions), offsetLookupConcurrency)
+
+	var waitGroup sync.WaitGroup
+
+	for range workerCount {
+		waitGroup.Go(func() {
+			for partition := range jobs {
+				endOffset, err := a.client.GetOffset(topic, partition, sarama.OffsetNewest)
+				results <- offsetLookupResult{
+					partition: partition,
+					offset:    endOffset,
+					err:       err,
+				}
+			}
+		})
+	}
+
+	go func() {
+		for _, partition := range partitions {
+			jobs <- partition
+		}
+
+		close(jobs)
+		waitGroup.Wait()
+		close(results)
+	}()
+
+	for result := range results {
+		if result.err != nil {
+			return nil, fmt.Errorf("client.GetOffset error: %w", result.err)
+		}
+
+		endOffsets[result.partition] = result.offset
+	}
+
+	return endOffsets, nil
+}
+
+type offsetLookupResult struct {
+	partition int32
+	offset    int64
+	err       error
+}
+
+func summarizeOffsetsLag(
+	partitions []int32,
+	topicOffsets map[int32]*sarama.OffsetFetchResponseBlock,
+	endOffsets map[int32]int64,
+) (int64, int64, int64, bool) {
+	var (
+		currentOffset      int64
+		logEndOffset       int64
+		lag                int64
+		hasCommittedOffset bool
+	)
+
+	for _, partition := range partitions {
+		block, ok := topicOffsets[partition]
+		if !ok || block == nil || block.Offset < 0 {
+			continue
+		}
+
+		endOffset := endOffsets[partition]
+		partitionLag := max(endOffset-block.Offset, 0)
+
+		currentOffset += block.Offset
+		logEndOffset += endOffset
+		lag += partitionLag
+		hasCommittedOffset = true
+	}
+
+	return currentOffset, logEndOffset, lag, hasCommittedOffset
 }
 
 func (a *Admin) AlterTopicPartitions(topic string, numPartitions int32) error {
