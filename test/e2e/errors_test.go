@@ -151,6 +151,52 @@ clusters:
 	}
 }
 
+func TestGroupLag_NonExistentGroup(t *testing.T) {
+	t.Parallel()
+
+	cli := NewKafkaCLI(t)
+	cli.WriteConfig(t, `
+default_cluster: local
+
+clusters:
+  local:
+    brokers:
+      - 127.0.0.1:9092
+`)
+
+	WaitForKafka(t, cli)
+
+	group := UniqueGroupName(t)
+
+	_, err := cli.Run(t.Context(), "group", "lag", group)
+	if err == nil {
+		t.Error("expected error when getting lag for non-existent consumer group")
+	}
+}
+
+func TestGroupOffsets_NonExistentGroup(t *testing.T) {
+	t.Parallel()
+
+	cli := NewKafkaCLI(t)
+	cli.WriteConfig(t, `
+default_cluster: local
+
+clusters:
+  local:
+    brokers:
+      - 127.0.0.1:9092
+`)
+
+	WaitForKafka(t, cli)
+
+	group := UniqueGroupName(t)
+
+	_, err := cli.Run(t.Context(), "group", "offsets", group)
+	if err == nil {
+		t.Error("expected error when getting offsets for non-existent consumer group")
+	}
+}
+
 func TestGroupDelete_NonExistentGroup(t *testing.T) {
 	t.Parallel()
 

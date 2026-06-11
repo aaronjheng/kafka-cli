@@ -191,10 +191,28 @@ kafka group list
 
 ### `kafka group describe GROUP`
 
-Show details of a consumer group (members, offsets, lag, etc.).
+Show details of a consumer group (state, protocol, members, etc.).
 
 ```shell
 kafka group describe my-group
+```
+
+### `kafka group offsets GROUP`
+
+Show committed offsets and partition lag for a consumer group. Use `--topic` to limit output to one topic.
+
+```shell
+kafka group offsets my-group
+kafka group offsets my-group --topic my-topic
+```
+
+### `kafka group lag GROUP`
+
+Show aggregated and partition-level lag for a consumer group. Use `--topic` to limit output to one topic.
+
+```shell
+kafka group lag my-group
+kafka group lag my-group --topic my-topic
 ```
 
 ### `kafka group delete GROUP [GROUP...]`
