@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	charm.land/lipgloss/v2 v2.0.3
-	github.com/IBM/sarama v1.50.1
+	github.com/IBM/sarama v1.50.2
 	github.com/adrg/xdg v0.5.3
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
