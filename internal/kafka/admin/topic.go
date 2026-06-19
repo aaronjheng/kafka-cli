@@ -131,19 +131,29 @@ func (a *Admin) renderPartitionTable(partitions []*sarama.PartitionMetadata) err
 }
 
 func (a *Admin) getCleanupPolicy(topic string) string {
-	configEntries, err := a.clusterAdmin.DescribeConfig(sarama.ConfigResource{
+	results, err := a.clusterAdmin.DescribeConfigs([]*sarama.ConfigResource{{
 		Type: sarama.TopicResource,
 		Name: topic,
-	})
+	}}, sarama.DescribeConfigsOptions{})
 	if err != nil {
-		slog.Debug("DescribeConfig failed", slog.String("topic", topic), slog.Any("error", err))
+		slog.Debug("DescribeConfigs failed", slog.String("topic", topic), slog.Any("error", err))
 
 		return unknownValue
 	}
 
-	for _, entry := range configEntries {
-		if entry.Name == "cleanup.policy" {
-			return entry.Value
+	for _, result := range results {
+		if result.ErrorCode != sarama.ErrNoError {
+			slog.Debug("DescribeConfigs returned error",
+				slog.String("topic", topic),
+				slog.String("error", result.ErrorMsg))
+
+			continue
+		}
+
+		for _, entry := range result.Configs {
+			if entry.Name == "cleanup.policy" {
+				return entry.Value
+			}
 		}
 	}
 
