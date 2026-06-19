@@ -3,7 +3,7 @@ module github.com/aaronjheng/kafka-cli
 go 1.26.0
 
 require (
-	charm.land/lipgloss/v2 v2.0.3
+	charm.land/lipgloss/v2 v2.0.4
 	github.com/IBM/sarama v1.50.3
 	github.com/adrg/xdg v0.5.3
 	github.com/spf13/cobra v1.10.2
