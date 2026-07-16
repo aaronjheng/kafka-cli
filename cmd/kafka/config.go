@@ -8,22 +8,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func configCmd() *cobra.Command {
+func configCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Manage configuration",
 	}
 
-	cmd.AddCommand(configCatCmd())
+	cmd.AddCommand(configCatCmd(meta))
 
 	return cmd
 }
 
-func configCatCmd() *cobra.Command {
+func configCatCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cat",
 		Short: "Print configuration file contents",
 		RunE: func(_ *cobra.Command, _ []string) error {
+			cfg, err := meta.Config()
+			if err != nil {
+				return err
+			}
+
 			cfgPathname := cfg.Filepath()
 			fmt.Fprintf(os.Stdout, "# %s\n", cfgPathname)
 

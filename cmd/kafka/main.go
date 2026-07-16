@@ -6,17 +6,16 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-
-	"github.com/aaronjheng/kafka-cli/internal/config"
-)
-
-//nolint:gochecknoglobals // Cobra command wiring keeps shared CLI state here.
-var (
-	cfg     *config.Config
-	cluster string
 )
 
 func rootCmd() *cobra.Command {
+	var (
+		cfgFilepath string
+		cluster     string
+	)
+
+	meta := NewMeta(&cfgFilepath, &cluster)
+
 	cmd := &cobra.Command{
 		Use:          "kafka",
 		Short:        "Command line tool for Apache Kafka",
@@ -26,14 +25,9 @@ func rootCmd() *cobra.Command {
 				return nil
 			}
 
-			cfgFilepath, err := cmd.Flags().GetString("config")
+			_, err := meta.Config()
 			if err != nil {
-				return fmt.Errorf("config flag error: %w", err)
-			}
-
-			cfg, err = config.LoadConfig(cfgFilepath)
-			if err != nil {
-				return fmt.Errorf("config flag error: %w", err)
+				return fmt.Errorf("load config: %w", err)
 			}
 
 			return nil
@@ -43,17 +37,17 @@ func rootCmd() *cobra.Command {
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	cmd.PersistentFlags().StringVarP(&cluster, "cluster", "c", "", "Cluster name to operate.")
-	cmd.PersistentFlags().StringP("config", "f", "", "Config file path.")
+	cmd.PersistentFlags().StringVarP(&cfgFilepath, "config", "f", "", "Config file path.")
 
-	err := cmd.RegisterFlagCompletionFunc("cluster", clusterCompletionFunc)
+	err := cmd.RegisterFlagCompletionFunc("cluster", clusterCompletionFunc(meta))
 	if err != nil {
 		panic(fmt.Sprintf("RegisterFlagCompletionFunc error: %v", err))
 	}
 
-	cmd.AddCommand(configCmd())
-	cmd.AddCommand(clusterCmd())
-	cmd.AddCommand(topicCmd())
-	cmd.AddCommand(groupCmd())
+	cmd.AddCommand(configCmd(meta))
+	cmd.AddCommand(clusterCmd(meta))
+	cmd.AddCommand(topicCmd(meta))
+	cmd.AddCommand(groupCmd(meta))
 	cmd.AddCommand(versionCmd())
 	cmd.AddCommand(completionCmd())
 

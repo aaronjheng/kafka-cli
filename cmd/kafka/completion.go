@@ -69,75 +69,83 @@ func genCompletion(cmd *cobra.Command, shell string) {
 	}
 }
 
-func topicCompletionFunc(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
-	if cfg == nil {
-		return nil, cobra.ShellCompDirectiveError
+func newCompletionAdmin(meta *Meta, cmd *cobra.Command) (*admin.Admin, func(), error) {
+	cfg, err := meta.Config()
+	if err != nil {
+		return nil, nil, err
 	}
 
-	adminClient, closer, err := admin.NewFromConfig(cfg, cluster)
+	adminClient, closer, err := admin.NewFromConfig(cfg, meta.Cluster())
 	if err != nil {
 		slog.Debug("provideAdmin error", slog.Any("error", err))
 
-		return nil, cobra.ShellCompDirectiveError
+		return nil, nil, fmt.Errorf("provideAdmin error: %w", err)
 	}
 
-	defer func() {
+	cleanup := func() {
 		err := closer(cmd.Context())
 		if err != nil {
 			slog.Debug("closer error", slog.Any("error", err))
 		}
-	}()
-
-	topics, err := adminClient.ListTopicNames()
-	if err != nil {
-		slog.Debug("admin.ListTopicNames error", slog.Any("error", err))
-
-		return nil, cobra.ShellCompDirectiveError
 	}
 
-	return topics, cobra.ShellCompDirectiveNoFileComp
+	return adminClient, cleanup, nil
 }
 
-func consumerGroupCompletionFunc(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
-	if cfg == nil {
-		return nil, cobra.ShellCompDirectiveError
-	}
-
-	adminClient, closer, err := admin.NewFromConfig(cfg, cluster)
-	if err != nil {
-		slog.Debug("provideAdmin error", slog.Any("error", err))
-
-		return nil, cobra.ShellCompDirectiveError
-	}
-
-	defer func() {
-		err := closer(cmd.Context())
+func topicCompletionFunc(meta *Meta) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+	return func(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		adminClient, cleanup, err := newCompletionAdmin(meta, cmd)
 		if err != nil {
-			slog.Debug("closer error", slog.Any("error", err))
+			return nil, cobra.ShellCompDirectiveError
 		}
-	}()
+		defer cleanup()
 
-	groups, err := adminClient.ListConsumerGroupIDs()
-	if err != nil {
-		slog.Debug("admin.ListConsumerGroupIDs error", slog.Any("error", err))
+		topics, err := adminClient.ListTopicNames()
+		if err != nil {
+			slog.Debug("admin.ListTopicNames error", slog.Any("error", err))
 
-		return nil, cobra.ShellCompDirectiveError
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		return topics, cobra.ShellCompDirectiveNoFileComp
 	}
-
-	return groups, cobra.ShellCompDirectiveNoFileComp
 }
 
-func clusterCompletionFunc(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
-	if cfg == nil {
-		return nil, cobra.ShellCompDirectiveError
+func consumerGroupCompletionFunc(meta *Meta) func(
+	*cobra.Command, []string, string,
+) ([]string, cobra.ShellCompDirective) {
+	return func(cmd *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		adminClient, cleanup, err := newCompletionAdmin(meta, cmd)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+		defer cleanup()
+
+		groups, err := adminClient.ListConsumerGroupIDs()
+		if err != nil {
+			slog.Debug("admin.ListConsumerGroupIDs error", slog.Any("error", err))
+
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		return groups, cobra.ShellCompDirectiveNoFileComp
 	}
+}
 
-	names := make([]string, 0, len(cfg.Clusters))
-	for name := range cfg.Clusters {
-		names = append(names, name)
+func clusterCompletionFunc(meta *Meta) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+	return func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		cfg, err := meta.Config()
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		names := make([]string, 0, len(cfg.Clusters))
+		for name := range cfg.Clusters {
+			names = append(names, name)
+		}
+
+		slices.Sort(names)
+
+		return names, cobra.ShellCompDirectiveNoFileComp
 	}
-
-	slices.Sort(names)
-
-	return names, cobra.ShellCompDirectiveNoFileComp
 }

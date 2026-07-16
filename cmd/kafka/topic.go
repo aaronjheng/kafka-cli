@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
 
 	"github.com/spf13/cobra"
 
@@ -12,7 +11,7 @@ import (
 
 const defaultTopicPartitions int32 = 3
 
-func topicCmd() *cobra.Command {
+func topicCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "topic",
 		Short: "Manage Kafka topics",
@@ -20,58 +19,43 @@ func topicCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(topicListCmd())
-	cmd.AddCommand(topicCreateCmd())
-	cmd.AddCommand(topicAlterCmd())
-	cmd.AddCommand(topicDeleteCmd())
-	cmd.AddCommand(topicDescribeCmd())
-	cmd.AddCommand(topicGetOffsetsCmd())
-	cmd.AddCommand(topicConsumeCmd())
-	cmd.AddCommand(topicProduceCmd())
+	cmd.AddCommand(topicListCmd(meta))
+	cmd.AddCommand(topicCreateCmd(meta))
+	cmd.AddCommand(topicAlterCmd(meta))
+	cmd.AddCommand(topicDeleteCmd(meta))
+	cmd.AddCommand(topicDescribeCmd(meta))
+	cmd.AddCommand(topicGetOffsetsCmd(meta))
+	cmd.AddCommand(topicConsumeCmd(meta))
+	cmd.AddCommand(topicProduceCmd(meta))
 
 	return cmd
 }
 
-func topicListCmd() *cobra.Command {
+func topicListCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all topics",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			ctx := cmd.Context()
-
-			admin, closer, err := admin.NewFromConfig(cfg, cluster)
-			if err != nil {
-				return fmt.Errorf("provideAdmin error: %w", err)
-			}
-
-			defer func() {
-				err := closer(ctx)
+			return withAdmin(cmd.Context(), meta, func(a *admin.Admin) error {
+				err := a.ListTopics()
 				if err != nil {
-					slog.Error("closer error", slog.Any("error", err))
-					// Ignore error
+					return fmt.Errorf("admin.ListTopics error: %w", err)
 				}
-			}()
 
-			err = admin.ListTopics()
-			if err != nil {
-				return fmt.Errorf("admin.ListTopics error: %w", err)
-			}
-
-			return nil
+				return nil
+			})
 		},
 	}
 
 	return cmd
 }
 
-func topicCreateCmd() *cobra.Command {
+func topicCreateCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a topic",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-
 			topic := args[0]
 
 			numPartitions, err := cmd.Flags().GetInt32("partitions")
@@ -84,25 +68,14 @@ func topicCreateCmd() *cobra.Command {
 				return fmt.Errorf("get replication-factor flag error: %w", err)
 			}
 
-			admin, closer, err := admin.NewFromConfig(cfg, cluster)
-			if err != nil {
-				return fmt.Errorf("provideAdmin error: %w", err)
-			}
-
-			defer func() {
-				err := closer(ctx)
+			return withAdmin(cmd.Context(), meta, func(a *admin.Admin) error {
+				err = a.CreateTopic(topic, numPartitions, replicationFactor)
 				if err != nil {
-					slog.Error("closer error", slog.Any("error", err))
-					// Ignore error
+					return fmt.Errorf("admin.CreateTopic error: %w", err)
 				}
-			}()
 
-			err = admin.CreateTopic(topic, numPartitions, replicationFactor)
-			if err != nil {
-				return fmt.Errorf("admin.CreateTopic error: %w", err)
-			}
-
-			return nil
+				return nil
+			})
 		},
 	}
 
@@ -112,15 +85,13 @@ func topicCreateCmd() *cobra.Command {
 	return cmd
 }
 
-func topicAlterCmd() *cobra.Command {
+func topicAlterCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "alter TOPIC",
 		Short:             "Alter a topic",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: topicCompletionFunc,
+		ValidArgsFunction: topicCompletionFunc(meta),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-
 			topic := args[0]
 
 			numPartitions, err := cmd.Flags().GetInt32("partitions")
@@ -128,24 +99,14 @@ func topicAlterCmd() *cobra.Command {
 				return fmt.Errorf("get partitions flag error: %w", err)
 			}
 
-			admin, closer, err := admin.NewFromConfig(cfg, cluster)
-			if err != nil {
-				return fmt.Errorf("provideAdmin error: %w", err)
-			}
-
-			defer func() {
-				err := closer(ctx)
+			return withAdmin(cmd.Context(), meta, func(a *admin.Admin) error {
+				err = a.AlterTopicPartitions(topic, numPartitions)
 				if err != nil {
-					slog.Error("closer error", slog.Any("error", err))
+					return fmt.Errorf("admin.AlterTopicPartitions error: %w", err)
 				}
-			}()
 
-			err = admin.AlterTopicPartitions(topic, numPartitions)
-			if err != nil {
-				return fmt.Errorf("admin.AlterTopicPartitions error: %w", err)
-			}
-
-			return nil
+				return nil
+			})
 		},
 	}
 
@@ -154,113 +115,81 @@ func topicAlterCmd() *cobra.Command {
 	return cmd
 }
 
-func topicDeleteCmd() *cobra.Command {
+func topicDeleteCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "delete",
 		Short:             "Delete topics",
-		ValidArgsFunction: topicCompletionFunc,
+		ValidArgsFunction: topicCompletionFunc(meta),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-
-			admin, closer, err := admin.NewFromConfig(cfg, cluster)
-			if err != nil {
-				return fmt.Errorf("provideAdmin error: %w", err)
-			}
-
-			defer func() {
-				err := closer(ctx)
+			return withAdmin(cmd.Context(), meta, func(a *admin.Admin) error {
+				err := a.DeleteTopics(args...)
 				if err != nil {
-					slog.Error("closer error", slog.Any("error", err))
-					// Ignore error
+					return fmt.Errorf("admin.DeleteTopics error: %w", err)
 				}
-			}()
 
-			err = admin.DeleteTopics(args...)
-			if err != nil {
-				return fmt.Errorf("admin.DeleteTopics error: %w", err)
-			}
-
-			return nil
+				return nil
+			})
 		},
 	}
 
 	return cmd
 }
 
-func topicDescribeCmd() *cobra.Command {
+func topicDescribeCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "describe TOPIC",
 		Short:             "Show details of a topic",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: topicCompletionFunc,
+		ValidArgsFunction: topicCompletionFunc(meta),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-
-			admin, closer, err := admin.NewFromConfig(cfg, cluster)
-			if err != nil {
-				return fmt.Errorf("provideAdmin error: %w", err)
-			}
-
-			defer func() {
-				err := closer(ctx)
+			return withAdmin(cmd.Context(), meta, func(a *admin.Admin) error {
+				err := a.DescribeTopic(args[0])
 				if err != nil {
-					slog.Error("closer error", slog.Any("error", err))
+					return fmt.Errorf("admin.DescribeTopic error: %w", err)
 				}
-			}()
 
-			err = admin.DescribeTopic(args[0])
-			if err != nil {
-				return fmt.Errorf("admin.DescribeTopic error: %w", err)
-			}
-
-			return nil
+				return nil
+			})
 		},
 	}
 
 	return cmd
 }
 
-func topicGetOffsetsCmd() *cobra.Command {
+func topicGetOffsetsCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "get-offsets TOPIC",
 		Short:             "Show oldest and newest offsets for each partition of a topic",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: topicCompletionFunc,
+		ValidArgsFunction: topicCompletionFunc(meta),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-
-			admin, closer, err := admin.NewFromConfig(cfg, cluster)
-			if err != nil {
-				return fmt.Errorf("provideAdmin error: %w", err)
-			}
-
-			defer func() {
-				err := closer(ctx)
+			return withAdmin(cmd.Context(), meta, func(a *admin.Admin) error {
+				err := a.GetOffsets(args[0])
 				if err != nil {
-					slog.Error("closer error", slog.Any("error", err))
+					return fmt.Errorf("admin.GetOffsets error: %w", err)
 				}
-			}()
 
-			err = admin.GetOffsets(args[0])
-			if err != nil {
-				return fmt.Errorf("admin.GetOffsets error: %w", err)
-			}
-
-			return nil
+				return nil
+			})
 		},
 	}
 
 	return cmd
 }
 
-func topicConsumeCmd() *cobra.Command {
+func topicConsumeCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "consume TOPIC",
 		Short:             "Consume messages from a topic",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: topicCompletionFunc,
+		ValidArgsFunction: topicCompletionFunc(meta),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clusterCfg, err := cfg.Cluster(cluster)
+			cfg, err := meta.Config()
+			if err != nil {
+				return err
+			}
+
+			clusterCfg, err := cfg.Cluster(meta.Cluster())
 			if err != nil {
 				return fmt.Errorf("clusterConfig error: %w", err)
 			}
@@ -296,16 +225,21 @@ func topicConsumeCmd() *cobra.Command {
 	return cmd
 }
 
-func topicProduceCmd() *cobra.Command {
+func topicProduceCmd(meta *Meta) *cobra.Command {
 	var keySeparator string
 
 	cmd := &cobra.Command{
 		Use:               "produce TOPIC",
 		Short:             "Produce messages to a topic",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: topicCompletionFunc,
+		ValidArgsFunction: topicCompletionFunc(meta),
 		RunE: func(_ *cobra.Command, args []string) error {
-			clusterCfg, err := cfg.Cluster(cluster)
+			cfg, err := meta.Config()
+			if err != nil {
+				return err
+			}
+
+			clusterCfg, err := cfg.Cluster(meta.Cluster())
 			if err != nil {
 				return fmt.Errorf("clusterConfig error: %w", err)
 			}
