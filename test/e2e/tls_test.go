@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -48,11 +49,11 @@ func TestClusterDescribe_TLS(t *testing.T) {
 		t.Fatalf("cluster describe failed: %v", err)
 	}
 
-	if !StringsContains(output, "Cluster ID:") {
+	if !strings.Contains(output, "Cluster ID:") {
 		t.Errorf("expected 'Cluster ID:' in output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Brokers") {
+	if !strings.Contains(output, "Brokers") {
 		t.Errorf("expected 'Brokers' in output, got: %s", output)
 	}
 }

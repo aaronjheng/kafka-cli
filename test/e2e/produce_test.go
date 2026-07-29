@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -306,7 +307,7 @@ clusters:
 		t.Fatalf("get-offsets failed: %v", err)
 	}
 
-	if !StringsContains(output, "3") {
+	if !strings.Contains(output, "3") {
 		t.Errorf("expected newest offset 3 in output, got: %s", output)
 	}
 }
