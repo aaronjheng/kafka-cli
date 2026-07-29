@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -24,11 +25,11 @@ clusters:
 		t.Fatalf("cluster describe failed: %v", err)
 	}
 
-	if !StringsContains(output, "Cluster ID:") {
+	if !strings.Contains(output, "Cluster ID:") {
 		t.Errorf("expected 'Cluster ID:' in output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Brokers") {
+	if !strings.Contains(output, "Brokers") {
 		t.Errorf("expected 'Brokers' in output, got: %s", output)
 	}
 }
@@ -172,15 +173,15 @@ clusters:
 		t.Fatalf("get-offsets failed: %v", err)
 	}
 
-	if !StringsContains(output, "Partition") {
+	if !strings.Contains(output, "Partition") {
 		t.Errorf("expected 'Partition' in output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Oldest Offset") {
+	if !strings.Contains(output, "Oldest Offset") {
 		t.Errorf("expected 'Oldest Offset' in output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Newest Offset") {
+	if !strings.Contains(output, "Newest Offset") {
 		t.Errorf("expected 'Newest Offset' in output, got: %s", output)
 	}
 }
@@ -261,15 +262,15 @@ clusters:
 		t.Fatalf("group describe failed: %v", err)
 	}
 
-	if !StringsContains(output, "Consumer Group:") {
+	if !strings.Contains(output, "Consumer Group:") {
 		t.Errorf("expected 'Consumer Group:' in output, got: %s", output)
 	}
 
-	if !StringsContains(output, "State:") {
+	if !strings.Contains(output, "State:") {
 		t.Errorf("expected 'State:' in output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Members:") {
+	if !strings.Contains(output, "Members:") {
 		t.Errorf("expected 'Members:' in output, got: %s", output)
 	}
 }

@@ -27,11 +27,11 @@ clusters:
 		t.Errorf("expected config path comment at start, got: %s", output)
 	}
 
-	if !StringsContains(output, "default_cluster: local") {
+	if !strings.Contains(output, "default_cluster: local") {
 		t.Errorf("expected 'default_cluster: local' in output, got: %s", output)
 	}
 
-	if !StringsContains(output, "127.0.0.1:9092") {
+	if !strings.Contains(output, "127.0.0.1:9092") {
 		t.Errorf("expected broker address in output, got: %s", output)
 	}
 }
@@ -78,7 +78,7 @@ clusters:
 		t.Fatalf("cluster describe with --cluster alternate failed: %v", err)
 	}
 
-	if !StringsContains(output, "Cluster ID:") {
+	if !strings.Contains(output, "Cluster ID:") {
 		t.Errorf("expected 'Cluster ID:' in output, got: %s", output)
 	}
 }

@@ -9,3 +9,5 @@ test/e2e/ssh_key.pub
 test/e2e/ssh_public_key
 
 e2e.test
+
+test/e2e/kafka/pod.yaml

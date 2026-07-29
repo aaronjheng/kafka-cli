@@ -9,10 +9,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e:
     name: E2E (Kafka ${{ matrix.kafka-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       KAFKA_VERSION: ${{ matrix.kafka-version }}
     strategy:
@@ -30,11 +35,6 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openssh-client podman
 
       - name: Generate SSH key
         id: ssh-key

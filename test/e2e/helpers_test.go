@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -110,7 +111,7 @@ func ProduceAndAssertConsumed(
 
 	messages := strings.Join(expectedMessages, "\n") + "\n"
 
-	consumeCtx, cancelConsume := context.WithTimeout(t.Context(), 10*time.Second)
+	consumeCtx, cancelConsume := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancelConsume()
 
 	consumerCmdArgs := make([]string, 0, 5+len(consumeArgs))
@@ -118,14 +119,13 @@ func ProduceAndAssertConsumed(
 		"-f", filepath.Join(cli.configDir, "kafka.yaml"),
 		"topic", "consume", topic,
 	)
-
 	consumerCmdArgs = append(consumerCmdArgs, consumeArgs...)
 
 	consumerCmd := exec.CommandContext(consumeCtx, cli.binary, consumerCmdArgs...)
 
-	var consumeStdout bytes.Buffer
+	var consumeStdout lockedBuffer
 
-	var consumeStderr bytes.Buffer
+	var consumeStderr lockedBuffer
 
 	consumerCmd.Stdout = &consumeStdout
 	consumerCmd.Stderr = &consumeStderr
@@ -135,30 +135,84 @@ func ProduceAndAssertConsumed(
 		t.Fatalf("start consumer failed: %v", err)
 	}
 
+	// Give the consumer a moment to establish its connection and offsets.
 	time.Sleep(1 * time.Second)
 
 	_, err = cli.RunWithStdin(t.Context(), messages, "topic", "produce", topic)
 	if err != nil {
+		cancelConsume()
+
+		_ = consumerCmd.Wait()
+
 		t.Fatalf("produce messages failed: %v", err)
 	}
 
-	time.Sleep(2 * time.Second)
+	if !waitForConsumedMessages(&consumeStdout, expectedMessages) {
+		cancelConsume()
+
+		_ = consumerCmd.Wait()
+
+		t.Fatalf(
+			"timed out waiting for consumed messages, got stdout=%q stderr=%q",
+			consumeStdout.String(),
+			consumeStderr.String(),
+		)
+	}
 
 	cancelConsume()
 
 	_ = consumerCmd.Wait()
+}
 
-	output := consumeStdout.String()
-	for _, message := range expectedMessages {
-		if !StringsContains(output, message) {
-			t.Fatalf(
-				"expected consumed message %q, got stdout=%q stderr=%q",
-				message,
-				output,
-				consumeStderr.String(),
-			)
+// waitForConsumedMessages polls the consumer output until every expected
+// message has been consumed or the deadline passes.
+func waitForConsumedMessages(output *lockedBuffer, expectedMessages []string) bool {
+	deadline := time.Now().Add(15 * time.Second)
+
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+
+	for !containsAll(output.String(), expectedMessages) {
+		if time.Now().After(deadline) {
+			return false
+		}
+
+		<-ticker.C
+	}
+
+	return true
+}
+
+// lockedBuffer is a goroutine-safe bytes.Buffer wrapper so the consumer
+// subprocess can write to it while the test polls its contents.
+type lockedBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (l *lockedBuffer) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	//nolint:wrapcheck // implements io.Writer; bytes.Buffer never returns an error
+	return l.b.Write(p)
+}
+
+func (l *lockedBuffer) String() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	return l.b.String()
+}
+
+func containsAll(s string, substrs []string) bool {
+	for _, substr := range substrs {
+		if !strings.Contains(s, substr) {
+			return false
 		}
 	}
+
+	return true
 }
 
 func UniqueTopicName(t *testing.T) string {
@@ -208,9 +262,11 @@ func ProduceAndConsumeWithGroup(
 	defer cancel()
 
 	handler := &consumeGroupHandler{
-		expected: len(messages),
-		consumed: 0,
-		done:     make(chan struct{}),
+		expected:  len(messages),
+		mu:        sync.Mutex{},
+		consumed:  0,
+		done:      make(chan struct{}),
+		closeOnce: sync.Once{},
 	}
 
 	go consumeGroupErrors(ctx, client)
@@ -231,23 +287,23 @@ func AssertGroupLagForTopic(t *testing.T, cli *KafkaCLI, group string, topic str
 		t.Fatalf("group lag with topic filter failed: %v", err)
 	}
 
-	if !StringsContains(output, group) {
+	if !strings.Contains(output, group) {
 		t.Errorf("expected group %q in group lag output, got: %s", group, output)
 	}
 
-	if !StringsContains(output, topic) {
+	if !strings.Contains(output, topic) {
 		t.Errorf("expected topic %q in group lag output, got: %s", topic, output)
 	}
 
-	if !StringsContains(output, "Lag") {
+	if !strings.Contains(output, "Lag") {
 		t.Errorf("expected 'Lag' in group lag output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Partitions") {
+	if !strings.Contains(output, "Partitions") {
 		t.Errorf("expected 'Partitions' in group lag output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Partition") {
+	if !strings.Contains(output, "Partition") {
 		t.Errorf("expected 'Partition' in group lag output, got: %s", output)
 	}
 }
@@ -260,27 +316,27 @@ func AssertGroupOffsetsForTopic(t *testing.T, cli *KafkaCLI, group string, topic
 		t.Fatalf("group offsets with topic filter failed: %v", err)
 	}
 
-	if !StringsContains(output, group) {
+	if !strings.Contains(output, group) {
 		t.Errorf("expected group %q in group offsets output, got: %s", group, output)
 	}
 
-	if !StringsContains(output, topic) {
+	if !strings.Contains(output, topic) {
 		t.Errorf("expected topic %q in group offsets output, got: %s", topic, output)
 	}
 
-	if !StringsContains(output, "Partition") {
+	if !strings.Contains(output, "Partition") {
 		t.Errorf("expected 'Partition' in group offsets output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Current Offset") {
+	if !strings.Contains(output, "Current Offset") {
 		t.Errorf("expected 'Current Offset' in group offsets output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Log End Offset") {
+	if !strings.Contains(output, "Log End Offset") {
 		t.Errorf("expected 'Log End Offset' in group offsets output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Lag") {
+	if !strings.Contains(output, "Lag") {
 		t.Errorf("expected 'Lag' in group offsets output, got: %s", output)
 	}
 }
@@ -310,8 +366,11 @@ func consumeGroupLoop(ctx context.Context, client sarama.ConsumerGroup, topic st
 
 type consumeGroupHandler struct {
 	expected int
-	consumed int
-	done     chan struct{}
+
+	mu        sync.Mutex
+	consumed  int
+	done      chan struct{}
+	closeOnce sync.Once
 }
 
 func (h *consumeGroupHandler) Setup(sarama.ConsumerGroupSession) error   { return nil }
@@ -321,10 +380,13 @@ func (h *consumeGroupHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, cla
 		sess.MarkMessage(msg, "")
 		sess.Commit()
 
+		h.mu.Lock()
 		h.consumed++
+		reached := h.consumed >= h.expected
+		h.mu.Unlock()
 
-		if h.consumed >= h.expected {
-			close(h.done)
+		if reached {
+			h.closeOnce.Do(func() { close(h.done) })
 
 			return nil
 		}
@@ -353,22 +415,38 @@ func brokersFromConfig(t *testing.T, cli *KafkaCLI) []string {
 	return nil
 }
 
+var waitForKafkaOnce sync.Once
+
+var errWaitForKafka error
+
+// WaitForKafka blocks until the shared Kafka broker is ready. The broker is
+// polled only once across all parallel tests; subsequent calls reuse the result.
 func WaitForKafka(t *testing.T, cli *KafkaCLI) {
 	t.Helper()
 
+	waitForKafkaOnce.Do(func() {
+		errWaitForKafka = waitUntilKafkaReady(cli)
+	})
+
+	if errWaitForKafka != nil {
+		t.Fatalf("kafka did not become ready: %v", errWaitForKafka)
+	}
+}
+
+func waitUntilKafkaReady(cli *KafkaCLI) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
 	for {
 		select {
 		case <-ctx.Done():
-			t.Fatal("timed out waiting for kafka to be ready")
+			return fmt.Errorf("timed out waiting for kafka to be ready: %w", ctx.Err())
 		case <-time.After(3 * time.Second):
 		}
 
 		_, err := cli.Run(ctx, "cluster", "describe")
 		if err == nil {
-			return
+			return nil
 		}
 	}
 }
@@ -404,8 +482,4 @@ func ExtractPartitionCount(output string) string {
 	}
 
 	return ""
-}
-
-func StringsContains(s, substr string) bool {
-	return strings.Contains(s, substr)
 }

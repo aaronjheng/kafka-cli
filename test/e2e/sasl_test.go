@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -282,11 +283,11 @@ func TestSASL_UnsupportedMechanism(t *testing.T) {
 func assertClusterDescribeOutput(t *testing.T, output string) {
 	t.Helper()
 
-	if !StringsContains(output, "Cluster ID:") {
+	if !strings.Contains(output, "Cluster ID:") {
 		t.Errorf("expected 'Cluster ID:' in output, got: %s", output)
 	}
 
-	if !StringsContains(output, "Brokers") {
+	if !strings.Contains(output, "Brokers") {
 		t.Errorf("expected 'Brokers' in output, got: %s", output)
 	}
 }
