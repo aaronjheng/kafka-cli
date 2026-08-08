@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	charm.land/lipgloss/v2 v2.0.5
-	github.com/IBM/sarama v1.60.0
+	github.com/IBM/sarama v1.60.1
 	github.com/adrg/xdg v0.5.3
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
@@ -32,7 +32,7 @@ require (
 	github.com/jcmturner/gofork v1.7.6 // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
-	github.com/klauspost/compress v1.19.0 // indirect
+	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mattn/go-runewidth v0.0.24 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
