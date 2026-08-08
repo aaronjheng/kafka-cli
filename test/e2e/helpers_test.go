@@ -473,6 +473,54 @@ func TopicExistsInOutput(output, topic string) bool {
 	return false
 }
 
+// waitForTopicListState polls `topic list` until every topic in topics is
+// present (want=true) or absent (want=false), or the deadline elapses.
+//
+// Kafka (KRaft in particular) may briefly serve a MetadataResponse that omits
+// a just-created or just-deleted topic, so topic CRUD tests must poll instead
+// of asserting on a single list call.
+func waitForTopicListState(t *testing.T, cli *KafkaCLI, want bool, topics ...string) {
+	t.Helper()
+
+	deadline := time.Now().Add(15 * time.Second)
+
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+
+	var lastOutput string
+
+	for {
+		output, err := cli.Run(t.Context(), "topic", "list")
+		if err != nil {
+			t.Fatalf("list topics failed: %v", err)
+		}
+
+		lastOutput = output
+
+		matched := true
+
+		for _, topic := range topics {
+			if TopicExistsInOutput(output, topic) != want {
+				matched = false
+
+				break
+			}
+		}
+
+		if matched {
+			return
+		}
+
+		if time.Now().After(deadline) {
+			break
+		}
+
+		<-ticker.C
+	}
+
+	t.Fatalf("timed out waiting for topics %v to be present=%v in list output: %s", topics, want, lastOutput)
+}
+
 func ExtractPartitionCount(output string) string {
 	re := regexp.MustCompile(`Partitions:\s*(\d+)`)
 

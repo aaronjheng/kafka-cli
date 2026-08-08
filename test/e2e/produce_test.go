@@ -182,18 +182,7 @@ clusters:
 		t.Fatalf("delete multiple topics failed: %v", err)
 	}
 
-	output, err := cli.Run(t.Context(), "topic", "list")
-	if err != nil {
-		t.Fatalf("list topics after delete failed: %v", err)
-	}
-
-	if TopicExistsInOutput(output, topic1) {
-		t.Errorf("topic %q should have been deleted", topic1)
-	}
-
-	if TopicExistsInOutput(output, topic2) {
-		t.Errorf("topic %q should have been deleted", topic2)
-	}
+	waitForTopicListState(t, cli, false, topic1, topic2)
 }
 
 func TestGroupDelete_MultipleGroups(t *testing.T) {

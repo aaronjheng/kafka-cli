@@ -173,14 +173,7 @@ func TestTopicCRUD_SASL(t *testing.T) {
 				t.Fatalf("create topic failed: %v", err)
 			}
 
-			output, err := cli.Run(t.Context(), "topic", "list")
-			if err != nil {
-				t.Fatalf("list topics failed: %v", err)
-			}
-
-			if !TopicExistsInOutput(output, topic) {
-				t.Errorf("topic %q not found in list output: %s", topic, output)
-			}
+			waitForTopicListState(t, cli, true, topic)
 
 			describeOutput, err := cli.Run(t.Context(), "topic", "describe", topic)
 			if err != nil {
@@ -197,14 +190,7 @@ func TestTopicCRUD_SASL(t *testing.T) {
 				t.Fatalf("delete topic failed: %v", err)
 			}
 
-			output, err = cli.Run(t.Context(), "topic", "list")
-			if err != nil {
-				t.Fatalf("list topics after delete failed: %v", err)
-			}
-
-			if TopicExistsInOutput(output, topic) {
-				t.Errorf("topic %q should have been deleted but still appears in list", topic)
-			}
+			waitForTopicListState(t, cli, false, topic)
 		})
 	}
 }
