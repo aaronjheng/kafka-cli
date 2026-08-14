@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestClusterDescribe_PlainText(t *testing.T) {
@@ -203,9 +204,18 @@ clusters:
 		t.Fatalf("alter topic failed: %v", err)
 	}
 
-	describeOutput, err := cli.Run(t.Context(), "topic", "describe", topic)
-	if err != nil {
-		t.Fatalf("describe topic after alter failed: %v", err)
+	var describeOutput string
+	for range 10 {
+		describeOutput, err = cli.Run(t.Context(), "topic", "describe", topic)
+		if err != nil {
+			t.Fatalf("describe topic after alter failed: %v", err)
+		}
+
+		if ExtractPartitionCount(describeOutput) == "5" {
+			break
+		}
+
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	partitions := ExtractPartitionCount(describeOutput)
