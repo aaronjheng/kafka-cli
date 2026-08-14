@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 MANIFEST_DIR="${PROJECT_DIR}/test/e2e/kafka"
 
-series=$(echo "${KAFKA_VERSION}" | cut -d. -f1-2)
+series=$(echo "${KAFKA_VERSION}" | cut -d. -f1)
 series_template="${MANIFEST_DIR}/pod-${series}.yaml"
 
 if [[ ! -f "${series_template}" ]]; then
