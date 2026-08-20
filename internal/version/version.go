@@ -25,7 +25,7 @@ func BuildCommit() string {
 		}
 	}
 
-	moduleVersion := strings.SplitN(buildInfo.Main.Version, "+", splitNParts)[0]
+	moduleVersion, _, _ := strings.Cut(buildInfo.Main.Version, "+")
 
 	matches := pseudoVersionCommitRegex.FindStringSubmatch(moduleVersion)
 	if len(matches) == expectedMatchGroups {
