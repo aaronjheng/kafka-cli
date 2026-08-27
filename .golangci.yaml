@@ -113,9 +113,6 @@ linters:
             - golang.org
     goconst:
       min-occurrences: 5
-    exhaustruct:
-      include:
-        - 'github\.com/aaronjheng/kafka-cli/.+'
   exclusions:
     generated: lax
     presets:
