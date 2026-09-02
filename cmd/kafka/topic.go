@@ -52,7 +52,7 @@ func topicListCmd(meta *Meta) *cobra.Command {
 
 func topicCreateCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create TOPIC",
 		Short: "Create a topic",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -117,8 +117,9 @@ func topicAlterCmd(meta *Meta) *cobra.Command {
 
 func topicDeleteCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "delete",
+		Use:               "delete TOPIC [TOPIC...]",
 		Short:             "Delete topics",
+		Args:              cobra.MinimumNArgs(1),
 		ValidArgsFunction: topicCompletionFunc(meta),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return withAdmin(cmd.Context(), meta, func(a *admin.Admin) error {

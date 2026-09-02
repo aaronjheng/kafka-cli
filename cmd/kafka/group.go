@@ -132,8 +132,9 @@ func newGroupTopicCmd(
 
 func groupDeleteCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "delete",
+		Use:               "delete GROUP [GROUP...]",
 		Short:             "Delete consumer groups",
+		Args:              cobra.MinimumNArgs(1),
 		ValidArgsFunction: consumerGroupCompletionFunc(meta),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return withAdmin(cmd.Context(), meta, func(a *admin.Admin) error {
