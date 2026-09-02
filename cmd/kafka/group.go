@@ -132,8 +132,11 @@ func newGroupTopicCmd(
 
 func groupDeleteCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "delete GROUP [GROUP...]",
-		Short:             "Delete consumer groups",
+		Use:   "delete GROUP [GROUP...]",
+		Short: "Delete consumer groups",
+		Long:  "Delete one or more consumer groups. Use \"--\" to separate flags from names starting with \"-\".",
+		Example: "  kafka group delete my-group\n" +
+			"  kafka group delete -- --my-group",
 		Args:              cobra.MinimumNArgs(1),
 		ValidArgsFunction: consumerGroupCompletionFunc(meta),
 		RunE: func(cmd *cobra.Command, args []string) error {

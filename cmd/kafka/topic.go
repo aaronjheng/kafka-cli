@@ -117,8 +117,12 @@ func topicAlterCmd(meta *Meta) *cobra.Command {
 
 func topicDeleteCmd(meta *Meta) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "delete TOPIC [TOPIC...]",
-		Short:             "Delete topics",
+		Use:   "delete TOPIC [TOPIC...]",
+		Short: "Delete topics",
+		Long:  "Delete one or more topics. Use \"--\" to separate flags from topic names starting with \"-\".",
+		Example: "  kafka topic delete my-topic\n" +
+			"  kafka topic delete topic-a topic-b\n" +
+			"  kafka topic delete -- --replication-factor",
 		Args:              cobra.MinimumNArgs(1),
 		ValidArgsFunction: topicCompletionFunc(meta),
 		RunE: func(cmd *cobra.Command, args []string) error {
