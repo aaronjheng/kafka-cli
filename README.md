@@ -82,7 +82,7 @@ clusters:
     brokers:
       - 127.0.0.1:9092
     ssh:
-      host: spine.prd
+      host: bastion.example.com
       mode: external
 ```
 
