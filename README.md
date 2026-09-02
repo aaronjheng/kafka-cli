@@ -65,10 +65,26 @@ Each cluster supports the following fields:
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `host` | Yes | SSH bastion host address |
-| `port` | Yes | SSH port (e.g. `22`) |
-| `user` | Yes | SSH user name |
-| `identity_file` | No | Path to SSH private key. If not specified, the following default keys are tried in order: `~/.ssh/id_ed25519`, `~/.ssh/id_ecdsa`, `~/.ssh/id_dsa`, `~/.ssh/id_rsa` |
+| `host` | Yes | SSH bastion host address. In `external` mode this may also be a `Host` alias from `~/.ssh/config` |
+| `port` | No | SSH port (e.g. `22`). In `external` mode, leave unset to inherit from `~/.ssh/config` |
+| `user` | No | SSH user name. In `external` mode, leave unset to inherit from `~/.ssh/config` |
+| `identity_file` | No | Path to SSH private key. If not specified, the following default keys are tried in order: `~/.ssh/id_ed25519`, `~/.ssh/id_ecdsa`, `~/.ssh/id_dsa`, `~/.ssh/id_rsa`. In `external` mode, leave unset to inherit from `~/.ssh/config` |
+| `mode` | No | Tunnel implementation: `builtin` (default) uses the in-process SSH client; `external` launches the system `ssh` command as a child process (tunnel only, via `ssh -D`) |
+| `options` | No | Extra `ssh` command-line arguments, passed through as-is. `external` mode only |
+
+In `external` mode, the `ssh` binary from `PATH` is used, so `~/.ssh/config`, `ssh-agent`, and interactive password prompts behave as with a normal `ssh` invocation. The tunnel is started and stopped together with the command.
+
+With an alias in `~/.ssh/config` (e.g. `User` or `ProxyCommand` directives), only `host` and `mode` are needed:
+
+```yaml
+clusters:
+  prod:
+    brokers:
+      - 127.0.0.1:9092
+    ssh:
+      host: spine.prd
+      mode: external
+```
 
 ## Usage
 

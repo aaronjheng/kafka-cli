@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -16,8 +17,8 @@ const (
 	scannerMaxBufferSize = 1024 * 1024
 )
 
-func RunTopicProduce(clusterCfg *Config, topic string, keySeparator string) error {
-	producer, err := NewSyncProducer(clusterCfg)
+func RunTopicProduce(ctx context.Context, clusterCfg *Config, topic string, keySeparator string) error {
+	producer, err := NewSyncProducer(ctx, clusterCfg)
 	if err != nil {
 		return fmt.Errorf("kafka.NewSyncProducer error: %w", err)
 	}

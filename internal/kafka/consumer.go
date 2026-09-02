@@ -64,7 +64,7 @@ func ReadPartitionMessages(
 	partition int32,
 	msgCh chan<- ConsumerMessage,
 ) {
-	reader, err := NewPartitionReader(clusterCfg, topic, partition, sarama.OffsetNewest)
+	reader, err := NewPartitionReader(ctx, clusterCfg, topic, partition, sarama.OffsetNewest)
 	if err != nil {
 		slog.Error("kafka.NewPartitionReader failed", slog.Any("error", err))
 

@@ -21,3 +21,4 @@ clusters:
       port: 22
       user: deploy
       identity_file: ~/.ssh/id_ed25519
+      # mode: external  # launch the system ssh command instead of the built-in client
