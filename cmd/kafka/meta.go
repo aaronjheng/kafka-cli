@@ -45,7 +45,7 @@ func withAdmin(ctx context.Context, meta *Meta, run func(*admin.Admin) error) er
 		return err
 	}
 
-	adminClient, closer, err := admin.NewFromConfig(cfg, meta.Cluster())
+	adminClient, closer, err := admin.NewFromConfig(ctx, cfg, meta.Cluster())
 	if err != nil {
 		return fmt.Errorf("provideAdmin error: %w", err)
 	}

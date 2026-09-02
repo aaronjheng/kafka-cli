@@ -233,7 +233,7 @@ func topicProduceCmd(meta *Meta) *cobra.Command {
 		Short:             "Produce messages to a topic",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: topicCompletionFunc(meta),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := meta.Config()
 			if err != nil {
 				return err
@@ -244,7 +244,7 @@ func topicProduceCmd(meta *Meta) *cobra.Command {
 				return fmt.Errorf("clusterConfig error: %w", err)
 			}
 
-			return kafka.RunTopicProduce(clusterCfg, args[0], keySeparator)
+			return kafka.RunTopicProduce(cmd.Context(), clusterCfg, args[0], keySeparator)
 		},
 	}
 

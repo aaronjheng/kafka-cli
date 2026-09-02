@@ -11,11 +11,23 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// Mode selects the SSH tunnel implementation.
+type Mode string
+
+const (
+	// ModeBuiltin uses the in-process SSH client.
+	ModeBuiltin Mode = "builtin"
+	// ModeExternal launches the system ssh(1) command as a child process.
+	ModeExternal Mode = "external"
+)
+
 type Config struct {
-	Host         string `mapstructure:"host"`
-	Port         int32  `mapstructure:"port"`
-	User         string `mapstructure:"user"`
-	IdentityFile string `mapstructure:"identity_file"`
+	Host         string   `mapstructure:"host"`
+	Port         int32    `mapstructure:"port"`
+	User         string   `mapstructure:"user"`
+	IdentityFile string   `mapstructure:"identity_file"`
+	Mode         Mode     `mapstructure:"mode"`
+	Options      []string `mapstructure:"options"`
 }
 
 type Client struct {
@@ -72,6 +84,19 @@ func (c *Client) Dial(ctx context.Context, protocol, address string) (net.Conn, 
 // Deprecated: Use Dial instead.
 func (c *Client) DialContext(ctx context.Context, protocol, address string) (net.Conn, error) {
 	return c.Dial(ctx, protocol, address)
+}
+
+func expandPath(path string) (string, error) {
+	if !strings.HasPrefix(path, "~/") {
+		return path, nil
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("os.UserHomeDir error: %w", err)
+	}
+
+	return filepath.Join(homeDir, path[2:]), nil
 }
 
 func sshSignersFromIdentityFiles(identityFiles []string) ([]ssh.Signer, error) {

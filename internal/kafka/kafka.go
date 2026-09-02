@@ -18,31 +18,38 @@ import (
 
 type Kafka struct {
 	sarama.Client
+
+	tunnel *ssh.Tunnel
+}
+
+// Close closes the client and the SSH tunnel it uses.
+func (k *Kafka) Close() error {
+	return errors.Join(k.Client.Close(), closeTunnel(k.tunnel))
 }
 
 var errInvalidTLSCA = errors.New("invalid TLS CA")
 
-func newSaramaConfig(clusterConfig *Config) (*sarama.Config, error) {
+func newSaramaConfig(ctx context.Context, clusterConfig *Config) (*sarama.Config, *ssh.Tunnel, error) {
 	err := clusterConfig.Validate()
 	if err != nil {
-		return nil, fmt.Errorf("cluster config validation error: %w", err)
+		return nil, nil, fmt.Errorf("cluster config validation error: %w", err)
 	}
 
 	saramaCfg := sarama.NewConfig()
 
 	err = configureTLS(saramaCfg, clusterConfig.TLS)
 	if err != nil {
-		return nil, fmt.Errorf("configureTLS error: %w", err)
+		return nil, nil, fmt.Errorf("configureTLS error: %w", err)
 	}
 
 	configureSASL(saramaCfg, clusterConfig.SASL)
 
-	err = configureSSH(saramaCfg, clusterConfig.SSH)
+	tunnel, err := configureSSH(ctx, saramaCfg, clusterConfig.SSH)
 	if err != nil {
-		return nil, fmt.Errorf("configureSSH error: %w", err)
+		return nil, nil, fmt.Errorf("configureSSH error: %w", err)
 	}
 
-	return saramaCfg, nil
+	return saramaCfg, tunnel, nil
 }
 
 func configureTLS(saramaCfg *sarama.Config, tlsConfig *TLS) error {
@@ -97,40 +104,64 @@ func configureSASL(saramaCfg *sarama.Config, saslConfig *SASL) {
 	}
 }
 
-func configureSSH(saramaCfg *sarama.Config, sshConfig *ssh.Config) error {
+func configureSSH(ctx context.Context, saramaCfg *sarama.Config, sshConfig *ssh.Config) (*ssh.Tunnel, error) {
 	if sshConfig == nil {
-		return nil
+		// A no-op tunnel keeps cleanup uniform for clusters without SSH.
+		return &ssh.Tunnel{}, nil
 	}
 
-	dialer, err := ssh.NewDialerFunc(sshConfig)
+	tunnel, err := ssh.NewTunnel(ctx, sshConfig)
 	if err != nil {
-		return fmt.Errorf("ssh.NewDialerFunc error: %w", err)
+		return nil, fmt.Errorf("ssh.NewTunnel error: %w", err)
 	}
 
 	saramaCfg.Net.Proxy.Enable = true
-	saramaCfg.Net.Proxy.Dialer = dialer
+	saramaCfg.Net.Proxy.Dialer = tunnel
+
+	return tunnel, nil
+}
+
+func closeTunnel(tunnel *ssh.Tunnel) error {
+	if tunnel == nil {
+		return nil
+	}
+
+	err := tunnel.Close()
+	if err != nil {
+		return fmt.Errorf("tunnel.Close error: %w", err)
+	}
 
 	return nil
 }
 
-func New(clusterConfig *Config) (*Kafka, error) {
-	saramaCfg, err := newSaramaConfig(clusterConfig)
+func New(ctx context.Context, clusterConfig *Config) (*Kafka, error) {
+	saramaCfg, tunnel, err := newSaramaConfig(ctx, clusterConfig)
 	if err != nil {
 		return nil, fmt.Errorf("newSaramaConfig error: %w", err)
 	}
 
 	client, err := sarama.NewClient(clusterConfig.Brokers, saramaCfg)
 	if err != nil {
+		_ = closeTunnel(tunnel)
+
 		return nil, fmt.Errorf("sarama.NewClient error: %w", err)
 	}
 
 	return &Kafka{
 		Client: client,
+		tunnel: tunnel,
 	}, nil
 }
 
-func NewSyncProducer(cfg *Config) (sarama.SyncProducer, error) {
-	saramaCfg, err := newSaramaConfig(cfg)
+// SyncProducer wraps a sarama sync producer together with its SSH tunnel.
+type SyncProducer struct {
+	sarama.SyncProducer
+
+	tunnel *ssh.Tunnel
+}
+
+func NewSyncProducer(ctx context.Context, cfg *Config) (*SyncProducer, error) {
+	saramaCfg, tunnel, err := newSaramaConfig(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("newSaramaConfig error: %w", err)
 	}
@@ -139,19 +170,36 @@ func NewSyncProducer(cfg *Config) (sarama.SyncProducer, error) {
 
 	producer, err := sarama.NewSyncProducer(cfg.Brokers, saramaCfg)
 	if err != nil {
+		_ = closeTunnel(tunnel)
+
 		return nil, fmt.Errorf("sarama.NewSyncProducer error: %w", err)
 	}
 
-	return producer, nil
+	return &SyncProducer{
+		SyncProducer: producer,
+		tunnel:       tunnel,
+	}, nil
+}
+
+// Close closes the producer and the SSH tunnel it uses.
+func (p *SyncProducer) Close() error {
+	return errors.Join(p.SyncProducer.Close(), closeTunnel(p.tunnel))
 }
 
 type PartitionReader struct {
 	consumer          sarama.Consumer
 	partitionConsumer sarama.PartitionConsumer
+	tunnel            *ssh.Tunnel
 }
 
-func NewPartitionReader(cfg *Config, topic string, partition int32, offset int64) (*PartitionReader, error) {
-	saramaCfg, err := newSaramaConfig(cfg)
+func NewPartitionReader(
+	ctx context.Context,
+	cfg *Config,
+	topic string,
+	partition int32,
+	offset int64,
+) (*PartitionReader, error) {
+	saramaCfg, tunnel, err := newSaramaConfig(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("newSaramaConfig error: %w", err)
 	}
@@ -160,12 +208,15 @@ func NewPartitionReader(cfg *Config, topic string, partition int32, offset int64
 
 	consumer, err := sarama.NewConsumer(cfg.Brokers, saramaCfg)
 	if err != nil {
+		_ = closeTunnel(tunnel)
+
 		return nil, fmt.Errorf("sarama.NewConsumer error: %w", err)
 	}
 
 	partitionConsumer, err := consumer.ConsumePartition(topic, partition, offset)
 	if err != nil {
 		_ = consumer.Close()
+		_ = closeTunnel(tunnel)
 
 		return nil, fmt.Errorf("consumer.ConsumePartition error: %w", err)
 	}
@@ -173,6 +224,7 @@ func NewPartitionReader(cfg *Config, topic string, partition int32, offset int64
 	return &PartitionReader{
 		consumer:          consumer,
 		partitionConsumer: partitionConsumer,
+		tunnel:            tunnel,
 	}, nil
 }
 
@@ -204,6 +256,11 @@ func (r *PartitionReader) Close() error {
 	}
 
 	err = r.consumer.Close()
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	err = closeTunnel(r.tunnel)
 	if err != nil {
 		errs = append(errs, err)
 	}

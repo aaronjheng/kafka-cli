@@ -75,7 +75,7 @@ func newCompletionAdmin(meta *Meta, cmd *cobra.Command) (*admin.Admin, func(), e
 		return nil, nil, err
 	}
 
-	adminClient, closer, err := admin.NewFromConfig(cfg, meta.Cluster())
+	adminClient, closer, err := admin.NewFromConfig(cmd.Context(), cfg, meta.Cluster())
 	if err != nil {
 		slog.Debug("provideAdmin error", slog.Any("error", err))
 

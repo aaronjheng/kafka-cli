@@ -22,13 +22,17 @@ func NewAdmin(client sarama.Client, clusterAdmin sarama.ClusterAdmin) *Admin {
 	}
 }
 
-func NewFromConfig(cfg *config.Config, clusterName string) (*Admin, func(context.Context) error, error) {
+func NewFromConfig(
+	ctx context.Context,
+	cfg *config.Config,
+	clusterName string,
+) (*Admin, func(context.Context) error, error) {
 	clusterCfg, err := cfg.Cluster(clusterName)
 	if err != nil {
 		return nil, nil, fmt.Errorf("cfg.Cluster error: %w", err)
 	}
 
-	cluster, err := kafka.New(clusterCfg)
+	cluster, err := kafka.New(ctx, clusterCfg)
 	if err != nil {
 		return nil, nil, fmt.Errorf("kafka.New error: %w", err)
 	}
@@ -41,6 +45,6 @@ func NewFromConfig(cfg *config.Config, clusterName string) (*Admin, func(context
 	}
 
 	return NewAdmin(cluster, clusterAdmin), func(_ context.Context) error {
-		return clusterAdmin.Close()
+		return cluster.Close()
 	}, nil
 }

@@ -12,7 +12,7 @@ var errTopicHasNoPartitions = errors.New("topic has no partitions")
 func ListTopicPartitions(ctx context.Context, cfg *Config, topic string) ([]int32, error) {
 	_ = ctx
 
-	client, err := New(cfg)
+	client, err := New(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("newSaramaClient error: %w", err)
 	}
