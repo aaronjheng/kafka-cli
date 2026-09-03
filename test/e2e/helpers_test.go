@@ -109,10 +109,54 @@ func ProduceAndAssertConsumed(
 ) {
 	t.Helper()
 
+	WaitForTopicReady(t, cli, topic)
+
 	messages := strings.Join(expectedMessages, "\n") + "\n"
 
 	consumeCtx, cancelConsume := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancelConsume()
+
+	consumerCmd, consumeStdout, consumeStderr := startConsumeCommand(consumeCtx, t, cli, topic, consumeArgs)
+
+	// Give the consumer a moment to establish its connection and offsets.
+	time.Sleep(1 * time.Second)
+
+	_, err := cli.RunWithStdin(t.Context(), messages, "topic", "produce", topic)
+	if err != nil {
+		cancelConsume()
+
+		_ = consumerCmd.Wait()
+
+		t.Fatalf("produce messages failed: %v", err)
+	}
+
+	if !waitForConsumedMessages(consumeStdout, expectedMessages) {
+		cancelConsume()
+
+		_ = consumerCmd.Wait()
+
+		t.Fatalf(
+			"timed out waiting for consumed messages, got stdout=%q stderr=%q",
+			consumeStdout.String(),
+			consumeStderr.String(),
+		)
+	}
+
+	cancelConsume()
+
+	_ = consumerCmd.Wait()
+}
+
+// startConsumeCommand starts a `topic consume` subprocess and returns it
+// together with buffers capturing its stdout and stderr.
+func startConsumeCommand(
+	consumeCtx context.Context,
+	t *testing.T,
+	cli *KafkaCLI,
+	topic string,
+	consumeArgs []string,
+) (*exec.Cmd, *lockedBuffer, *lockedBuffer) {
+	t.Helper()
 
 	consumerCmdArgs := make([]string, 0, 5+len(consumeArgs))
 	consumerCmdArgs = append(consumerCmdArgs,
@@ -135,33 +179,7 @@ func ProduceAndAssertConsumed(
 		t.Fatalf("start consumer failed: %v", err)
 	}
 
-	// Give the consumer a moment to establish its connection and offsets.
-	time.Sleep(1 * time.Second)
-
-	_, err = cli.RunWithStdin(t.Context(), messages, "topic", "produce", topic)
-	if err != nil {
-		cancelConsume()
-
-		_ = consumerCmd.Wait()
-
-		t.Fatalf("produce messages failed: %v", err)
-	}
-
-	if !waitForConsumedMessages(&consumeStdout, expectedMessages) {
-		cancelConsume()
-
-		_ = consumerCmd.Wait()
-
-		t.Fatalf(
-			"timed out waiting for consumed messages, got stdout=%q stderr=%q",
-			consumeStdout.String(),
-			consumeStderr.String(),
-		)
-	}
-
-	cancelConsume()
-
-	_ = consumerCmd.Wait()
+	return consumerCmd, &consumeStdout, &consumeStderr
 }
 
 // waitForConsumedMessages polls the consumer output until every expected
@@ -235,6 +253,8 @@ func ProduceAndConsumeWithGroup(
 	messages []string,
 ) {
 	t.Helper()
+
+	WaitForTopicReady(t, cli, topic)
 
 	msgs := strings.Join(messages, "\n") + "\n"
 
@@ -447,6 +467,28 @@ func waitUntilKafkaReady(cli *KafkaCLI) error {
 		_, err := cli.Run(ctx, "cluster", "describe")
 		if err == nil {
 			return nil
+		}
+	}
+}
+
+// WaitForTopicReady waits until all partitions of the topic have elected
+// leaders, so that consumers resolve offsets without racing topic creation.
+func WaitForTopicReady(t *testing.T, cli *KafkaCLI, topic string) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+
+	for {
+		_, err := cli.Run(ctx, "topic", "get-offsets", topic)
+		if err == nil {
+			return
+		}
+
+		select {
+		case <-ctx.Done():
+			t.Fatalf("topic %q did not become ready: %v", topic, ctx.Err())
+		case <-time.After(500 * time.Millisecond):
 		}
 	}
 }
