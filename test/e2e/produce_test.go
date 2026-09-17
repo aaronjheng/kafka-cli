@@ -31,6 +31,8 @@ clusters:
 		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
 	})
 
+	WaitForTopicReady(t, cli, topic)
+
 	messages := "key1:value1\nkey2:value2\nvalue-only\n"
 
 	_, err = cli.RunWithStdin(t.Context(), messages, "topic", "produce", topic, "--key-separator", ":")
@@ -68,6 +70,8 @@ clusters:
 	t.Cleanup(func() {
 		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
 	})
+
+	WaitForTopicReady(t, cli, topic)
 
 	messages := "msg1\n\n\nmsg2\n"
 
@@ -138,6 +142,10 @@ clusters:
 		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
 	})
 
+	// The topic metadata may not be visible to a fresh describe call
+	// immediately after creation, so poll until it is ready.
+	WaitForTopicReady(t, cli, topic)
+
 	describeOutput, err := cli.Run(t.Context(), "topic", "describe", topic)
 	if err != nil {
 		t.Fatalf("describe topic failed: %v", err)
@@ -176,6 +184,9 @@ clusters:
 	if err != nil {
 		t.Fatalf("create topic2 failed: %v", err)
 	}
+
+	WaitForTopicReady(t, cli, topic1)
+	WaitForTopicReady(t, cli, topic2)
 
 	_, err = cli.Run(t.Context(), "topic", "delete", topic1, topic2)
 	if err != nil {
@@ -248,6 +259,8 @@ clusters:
 		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
 	})
 
+	WaitForTopicReady(t, cli, topic)
+
 	messages := "key1:value1\nno-separator-here\nkey2:value2\n"
 
 	_, err = cli.RunWithStdin(t.Context(), messages, "topic", "produce", topic, "--key-separator", ":")
@@ -285,6 +298,8 @@ clusters:
 	t.Cleanup(func() {
 		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
 	})
+
+	WaitForTopicReady(t, cli, topic)
 
 	_, err = cli.RunWithStdin(t.Context(), "msg1\nmsg2\nmsg3\n", "topic", "produce", topic)
 	if err != nil {
