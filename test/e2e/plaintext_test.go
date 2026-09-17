@@ -155,6 +155,8 @@ clusters:
 		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
 	})
 
+	WaitForTopicReady(t, cli, topic)
+
 	output, err := cli.Run(t.Context(), "topic", "get-offsets", topic)
 	if err != nil {
 		t.Fatalf("get-offsets failed: %v", err)
@@ -198,6 +200,8 @@ clusters:
 	t.Cleanup(func() {
 		_, _ = cli.Run(t.Context(), "topic", "delete", topic)
 	})
+
+	WaitForTopicReady(t, cli, topic)
 
 	_, err = cli.Run(t.Context(), "topic", "alter", topic, "--partitions", "5")
 	if err != nil {
