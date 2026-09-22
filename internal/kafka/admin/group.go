@@ -82,11 +82,26 @@ func (a *Admin) describeConsumerGroup(group string) (*sarama.GroupDescription, e
 		return nil, fmt.Errorf("clusterAdmin.DescribeConsumerGroups error: %w", err)
 	}
 
-	if len(details) == 0 || details[0].State == "Dead" {
+	if len(details) == 0 {
 		return nil, fmt.Errorf("%w: %s", errConsumerGroupNotFound, group)
 	}
 
-	return details[0], nil
+	desc := details[0]
+
+	// Brokers surface "group not found" in different ways: some return a
+	// per-group error code, others a "Dead" (or empty) state with no error.
+	// Transient coordinator errors also arrive as per-group error codes with
+	// an empty state, so Err must be checked alongside State.
+	switch {
+	case desc.Err == sarama.ErrGroupIDNotFound:
+		return nil, fmt.Errorf("%w: %s", errConsumerGroupNotFound, group)
+	case desc.Err != sarama.ErrNoError:
+		return nil, fmt.Errorf("describe consumer group %s error: %w", group, desc.Err)
+	case desc.State == "" || desc.State == "Dead":
+		return nil, fmt.Errorf("%w: %s", errConsumerGroupNotFound, group)
+	}
+
+	return desc, nil
 }
 
 func (a *Admin) ListConsumerGroupOffsets(group string, topic string) error {
