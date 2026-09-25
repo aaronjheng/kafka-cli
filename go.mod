@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	charm.land/lipgloss/v2 v2.0.6
-	github.com/IBM/sarama v1.60.2
+	github.com/IBM/sarama v1.61.0
 	github.com/adrg/xdg v0.5.3
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/spf13/cobra v1.10.2
