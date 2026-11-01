@@ -366,7 +366,8 @@ func consumeGroupErrors(ctx context.Context, client sarama.ConsumerGroup) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-client.Errors():
+		case err := <-client.Errors():
+			_ = err // Drain errors; they are surfaced via the handler.
 		}
 	}
 }
