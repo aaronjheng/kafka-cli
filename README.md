@@ -22,7 +22,7 @@ An [Agent Skill](https://agentskills.io) for coding agents is available in
 [`skills/kafka-cli`](skills/kafka-cli/SKILL.md):
 
 ```shell
-skills add aaronjheng/kafka-cli --skill kafka-cli
+skills add aaronjheng/kafka-cli --skill kafka-cli --global
 ```
 
 ## Configuration
