@@ -16,6 +16,15 @@ If you need the newest `master` commit immediately (without relying on branch-re
 go install github.com/aaronjheng/kafka-cli/cmd/kafka@$(git ls-remote https://github.com/aaronjheng/kafka-cli.git refs/heads/master | cut -f1)
 ```
 
+## Agent Skills
+
+An [Agent Skill](https://agentskills.io) for coding agents is available in
+[`skills/kafka-cli`](skills/kafka-cli/SKILL.md):
+
+```shell
+skills add aaronjheng/kafka-cli --skill kafka-cli
+```
+
 ## Configuration
 
 See [kafka.example.yaml](contrib/kafka.example.yaml) for reference.
